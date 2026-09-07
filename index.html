@@ -15,19 +15,29 @@
       <canvas id="scene" aria-label="โมเดลอาคารสำนักงานอัจฉริยะแบบสามมิติ"></canvas>
       <header class="topbar">
         <a class="brand" href="#" aria-label="Lumen Building home"><span class="brand-mark"></span><span>Lumen Building</span></a>
-        <div class="top-actions"><span class="demo-label">ข้อมูลจำลอง</span><button class="quiet" id="autoRotate" type="button" aria-pressed="false">หมุนอาคาร</button><button class="primary" type="button">เข้าสู่ Setup Wizard</button></div>
+        <div class="top-actions"><span class="demo-label">ข้อมูลจำลอง · Demo data</span><button class="quiet" id="autoRotate" type="button" aria-pressed="false">หมุนอาคาร</button><button class="primary" id="guidedTour" type="button">เริ่มชม 3 นาที</button></div>
       </header>
 
       <main class="story">
         <p class="context">Smart Building Experience</p>
         <h1>มองเห็นทั้งอาคาร<br>ก่อนปัญหาจะเกิดขึ้น</h1>
-        <p class="intro">ทุกระบบ พื้นที่ และเหตุการณ์เชื่อมอยู่บนโมเดลเดียว สำรวจอาคารหรือให้เราพาชมเรื่องราวภายใน 3 นาที</p>
+        <p class="intro">เลือกแต่ละระบบเพื่อดูอุปกรณ์ เส้นทางข้อมูล และผลกระทบที่เกิดขึ้นจริงภายในอาคาร</p>
         <div class="view-switcher" role="group" aria-label="เลือกมุมมองอาคาร">
           <button class="view active" data-view="exterior" type="button"><span>01</span> ภายนอก</button>
           <button class="view" data-view="cutaway" type="button"><span>02</span> เปิดภายใน</button>
           <button class="view" data-view="plant" type="button"><span>03</span> ห้องเครื่อง</button>
         </div>
       </main>
+
+      <nav class="product-dock" aria-label="เลือกระบบ Smart Building">
+        <button class="product active" data-product="overview" type="button"><i>00</i><span>ภาพรวม<small>Overview</small></span></button>
+        <button class="product" data-product="energy" type="button"><i>01</i><span>พลังงาน<small>Energy</small></span></button>
+        <button class="product" data-product="comfort" type="button"><i>02</i><span>อากาศและแสง<small>HVAC & IAQ</small></span></button>
+        <button class="product" data-product="workspace" type="button"><i>03</i><span>พื้นที่ทำงาน<small>Workspace</small></span></button>
+        <button class="product" data-product="security" type="button"><i>04</i><span>ความปลอดภัย<small>Access & CCTV</small></span></button>
+        <button class="product" data-product="parking" type="button"><i>05</i><span>ที่จอดรถ<small>Parking & EV</small></span></button>
+        <button class="product" data-product="plant" type="button"><i>06</i><span>ห้องเครื่อง<small>Plant room</small></span></button>
+      </nav>
 
       <aside class="system-panel" aria-live="polite">
         <div class="panel-head"><span class="live-dot"></span><span id="systemState">ทุกระบบทำงานปกติ</span></div>
@@ -36,17 +46,19 @@
           <h2 id="systemTitle">พร้อมทำงาน<br>เป็นระบบเดียว</h2>
           <p id="systemDescription">อาคาร 8 ชั้นเชื่อมพลังงาน สภาพแวดล้อม ความปลอดภัย และห้องเครื่องเข้าด้วยกัน</p>
         </div>
-        <dl class="metrics">
+        <dl class="metrics" id="metrics">
           <div><dt>การใช้พลังงานวันนี้</dt><dd>1,284 <small>kWh</small></dd></div>
           <div><dt>ผู้ใช้อาคาร</dt><dd>428 <small>คน</small></dd></div>
           <div><dt>คุณภาพอากาศ</dt><dd>ดี <small>CO₂ 612 ppm</small></dd></div>
         </dl>
+        <div class="impact"><span>Business impact</span><strong id="impactValue">−18% ค่าใช้พลังงาน</strong></div>
       </aside>
 
       <div class="floor-rail"><span>R</span><div class="rail-line"><i id="railFill"></i></div><span>B2</span></div>
-      <div class="hint">ลากเพื่อหมุน · Scroll เพื่อซูม</div>
+      <div class="hint"><span class="mouse-icon"></span>ลากเพื่อหมุน · Scroll เพื่อซูม · คลิกระบบเพื่อดูโมเดล</div>
     </div>
     <script src="/src/three.js"></script>
     <script src="/src/main.js"></script>
+    <script src="/src/products.js"></script>
   </body>
 </html>
