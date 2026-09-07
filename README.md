@@ -1,6 +1,6 @@
-# Lumen Building
+# ONE Building
 
-Interactive 3D art-direction prototype for the Smart Building presentation platform.
+Cinematic Smart Building presentation built around a validated glTF office model. The experience combines a guided executive story with a free-explore mode and product-specific digital-twin layers.
 
 ## Run locally
 
@@ -16,12 +16,16 @@ Open `http://localhost:4173`.
 npm run build
 ```
 
-The static site is written to `dist/` for Vercel deployment.
+Vite writes the production site to `dist/` for Vercel deployment.
 
-## Prototype views
+## Story chapters
 
-- Exterior: premium office tower and system overview
-- Cutaway: hides the glass shell to reveal modular floor interiors
-- Plant room: moves the camera to B2 and shows a simulated chiller incident
+- Living Digital Twin
+- Energy Flow
+- HVAC & Air Quality
+- People & Workspace
+- Access & CCTV
+- Parking & EV
+- Plant Intelligence
 
-The procedural model keeps floors and systems as named scene groups so the setup wizard can later assemble 1–10 upper floors and toggle system overlays.
+The 42 m building contains 10 floors across six distinct massing sections, a composed lobby facade, sky-garden and meeting bands, and rooftop solar equipment. The GLB passed Khronos validation with no errors or warnings.

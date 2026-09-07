@@ -3,62 +3,62 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#09111f" />
-    <title>Lumen Building — Smart Building 3D</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/src/style.css">
+    <meta name="theme-color" content="#060b12" />
+    <meta name="description" content="Immersive smart building digital twin experience" />
+    <title>ONE Building — A living digital twin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div id="app">
-      <canvas id="scene" aria-label="โมเดลอาคารสำนักงานอัจฉริยะแบบสามมิติ"></canvas>
+    <div class="experience" id="experience">
+      <canvas id="scene" aria-label="โมเดลสามมิติของอาคารสำนักงานอัจฉริยะ"></canvas>
+      <div class="noise"></div>
+      <div class="loader" id="loader"><span></span><p>กำลังเปิด Digital Twin</p><small id="loadPercent">0%</small></div>
+
       <header class="topbar">
-        <a class="brand" href="#" aria-label="Lumen Building home"><span class="brand-mark"></span><span>Lumen Building</span></a>
-        <div class="top-actions"><span class="demo-label">ข้อมูลจำลอง · Demo data</span><button class="quiet" id="autoRotate" type="button" aria-pressed="false">หมุนอาคาร</button><button class="primary" id="guidedTour" type="button">เริ่มชม 3 นาที</button></div>
+        <a class="identity" href="#" aria-label="ONE Building">
+          <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 25V9l12-6 12 6v16l-12 6L5 25Z"/><path d="m5 9 12 7 12-7M17 16v15"/></svg>
+          <span><b>ONE</b> Building</span>
+        </a>
+        <div class="modes" role="group" aria-label="Presentation mode">
+          <button class="mode active" data-mode="story" type="button">ชมตามเรื่อง</button>
+          <button class="mode" data-mode="explore" type="button">สำรวจอาคาร</button>
+        </div>
+        <div class="top-meta"><span>Bangkok · 09:41</span><button id="tourButton" type="button">เริ่มนำเสนอ <i></i></button></div>
       </header>
 
-      <main class="story">
-        <p class="context">Smart Building Experience</p>
-        <h1>มองเห็นทั้งอาคาร<br>ก่อนปัญหาจะเกิดขึ้น</h1>
-        <p class="intro">เลือกแต่ละระบบเพื่อดูอุปกรณ์ เส้นทางข้อมูล และผลกระทบที่เกิดขึ้นจริงภายในอาคาร</p>
-        <div class="view-switcher" role="group" aria-label="เลือกมุมมองอาคาร">
-          <button class="view active" data-view="exterior" type="button"><span>01</span> ภายนอก</button>
-          <button class="view" data-view="cutaway" type="button"><span>02</span> เปิดภายใน</button>
-          <button class="view" data-view="plant" type="button"><span>03</span> ห้องเครื่อง</button>
-        </div>
+      <main class="narrative">
+        <div class="eyebrow"><span id="chapterNumber">01</span><i></i><span id="chapterLabel">THE LIVING BUILDING</span></div>
+        <h1 id="headline">อาคารที่มองเห็น<br><em>อนาคต</em></h1>
+        <p id="description">ทุกพื้นที่ ทุกระบบ และทุกเหตุการณ์ เชื่อมอยู่บน Digital Twin เดียว เพื่อให้ทีมอาคารตัดสินใจก่อนที่ปัญหาจะเกิด</p>
+        <div class="chapter-impact"><small>BUSINESS OUTCOME</small><strong id="impact">ลดพลังงาน 18%</strong></div>
       </main>
 
-      <nav class="product-dock" aria-label="เลือกระบบ Smart Building">
-        <button class="product active" data-product="overview" type="button"><i>00</i><span>ภาพรวม<small>Overview</small></span></button>
-        <button class="product" data-product="energy" type="button"><i>01</i><span>พลังงาน<small>Energy</small></span></button>
-        <button class="product" data-product="comfort" type="button"><i>02</i><span>อากาศและแสง<small>HVAC & IAQ</small></span></button>
-        <button class="product" data-product="workspace" type="button"><i>03</i><span>พื้นที่ทำงาน<small>Workspace</small></span></button>
-        <button class="product" data-product="security" type="button"><i>04</i><span>ความปลอดภัย<small>Access & CCTV</small></span></button>
-        <button class="product" data-product="parking" type="button"><i>05</i><span>ที่จอดรถ<small>Parking & EV</small></span></button>
-        <button class="product" data-product="plant" type="button"><i>06</i><span>ห้องเครื่อง<small>Plant room</small></span></button>
-      </nav>
-
-      <aside class="system-panel" aria-live="polite">
-        <div class="panel-head"><span class="live-dot"></span><span id="systemState">ทุกระบบทำงานปกติ</span></div>
-        <div class="selected-copy">
-          <p id="systemKicker">ภาพรวมอาคาร · Building overview</p>
-          <h2 id="systemTitle">พร้อมทำงาน<br>เป็นระบบเดียว</h2>
-          <p id="systemDescription">อาคาร 8 ชั้นเชื่อมพลังงาน สภาพแวดล้อม ความปลอดภัย และห้องเครื่องเข้าด้วยกัน</p>
-        </div>
-        <dl class="metrics" id="metrics">
-          <div><dt>การใช้พลังงานวันนี้</dt><dd>1,284 <small>kWh</small></dd></div>
-          <div><dt>ผู้ใช้อาคาร</dt><dd>428 <small>คน</small></dd></div>
-          <div><dt>คุณภาพอากาศ</dt><dd>ดี <small>CO₂ 612 ppm</small></dd></div>
-        </dl>
-        <div class="impact"><span>Business impact</span><strong id="impactValue">−18% ค่าใช้พลังงาน</strong></div>
+      <aside class="chapters" aria-label="Smart Building systems">
+        <button class="chapter active" data-chapter="overview" type="button"><span>01</span><div><b>ภาพรวมอาคาร</b><small>Living Digital Twin</small></div></button>
+        <button class="chapter" data-chapter="energy" type="button"><span>02</span><div><b>พลังงาน</b><small>Energy Flow</small></div></button>
+        <button class="chapter" data-chapter="comfort" type="button"><span>03</span><div><b>สภาวะภายใน</b><small>HVAC & Air Quality</small></div></button>
+        <button class="chapter" data-chapter="workspace" type="button"><span>04</span><div><b>พื้นที่ทำงาน</b><small>People & Workspace</small></div></button>
+        <button class="chapter" data-chapter="security" type="button"><span>05</span><div><b>ความปลอดภัย</b><small>Access & CCTV</small></div></button>
+        <button class="chapter" data-chapter="parking" type="button"><span>06</span><div><b>การเดินทาง</b><small>Parking & EV</small></div></button>
+        <button class="chapter" data-chapter="plant" type="button"><span>07</span><div><b>ระบบเครื่องกล</b><small>Plant Intelligence</small></div></button>
       </aside>
 
-      <div class="floor-rail"><span>R</span><div class="rail-line"><i id="railFill"></i></div><span>B2</span></div>
-      <div class="hint"><span class="mouse-icon"></span>ลากเพื่อหมุน · Scroll เพื่อซูม · คลิกระบบเพื่อดูโมเดล</div>
+      <section class="telemetry" aria-live="polite">
+        <div class="telemetry-title"><span class="status-dot"></span><span id="statusText">ALL SYSTEMS OPTIMAL</span><small>SIMULATED DATA</small></div>
+        <div class="readings" id="readings">
+          <div><small>ENERGY NOW</small><strong>286</strong><span>kW</span></div>
+          <div><small>OCCUPANCY</small><strong>428</strong><span>people</span></div>
+          <div><small>AIR QUALITY</small><strong>612</strong><span>ppm CO₂</span></div>
+        </div>
+      </section>
+
+      <div class="floor-marker"><span>R</span><i><b id="floorProgress"></b></i><span>B2</span></div>
+      <div class="interaction-hint" id="interactionHint"><span></span>ลากเพื่อหมุน · Scroll เพื่อซูม</div>
+      <footer><span>ONE BUILDING / DIGITAL TWIN EXPERIENCE</span><span>PROPOSAL 2026</span></footer>
     </div>
-    <script src="/src/three.js"></script>
-    <script src="/src/main.js"></script>
-    <script src="/src/products.js"></script>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
