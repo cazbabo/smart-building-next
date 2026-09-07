@@ -16,6 +16,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.18;
+renderer.localClippingEnabled = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x060b12);
@@ -78,6 +79,15 @@ const warmRim = new THREE.SpotLight(0xffa45b, 1400, 120, 0.58, 1); warmRim.posit
 
 const tower = new THREE.Group(); tower.name = 'LumenHQ'; scene.add(tower);
 let architecture;
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.8);
+function setArchitectureCutaway(enabled) {
+  if (!architecture) return;
+  architecture.traverse(object => {
+    if (!object.isMesh || !object.material) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach(material => { material.clippingPlanes = enabled ? [cutPlane] : []; material.clipShadows = true; material.needsUpdate = true; });
+  });
+}
 new GLTFLoader().load('/assets/lumen-hq.glb', ({ scene: model }) => {
   architecture = model;
   const bounds = new THREE.Box3().setFromObject(model);
@@ -87,13 +97,16 @@ new GLTFLoader().load('/assets/lumen-hq.glb', ({ scene: model }) => {
     if (!object.isMesh) return;
     object.castShadow = true; object.receiveShadow = true;
     if (object.material) {
-      object.material.envMapIntensity = 1.35;
-      if (/window|glass/i.test(object.material.name)) {
-        object.material.metalness = 0.15; object.material.roughness = 0.14;
-      }
+      object.material = Array.isArray(object.material) ? object.material.map(material => material.clone()) : object.material.clone();
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.forEach(material => {
+        material.envMapIntensity = 1.35;
+        if (/window|glass/i.test(material.name)) { material.metalness = 0.15; material.roughness = 0.14; }
+      });
     }
   });
   tower.add(model);
+  setArchitectureCutaway(current !== 'overview');
   document.querySelector('#loader').classList.add('done');
 }, (event) => {
   if (event.total) document.querySelector('#loadPercent').textContent = `${Math.round(event.loaded / event.total * 100)}%`;
@@ -105,6 +118,28 @@ const cyan = new THREE.MeshStandardMaterial({ color: 0x38d9f5, emissive: 0x0aa9c
 const cyanGhost = new THREE.MeshBasicMaterial({ color: 0x38d9f5, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false });
 const amber = new THREE.MeshStandardMaterial({ color: 0xffb066, emissive: 0xe56e22, emissiveIntensity: 2.2 });
 const alert = new THREE.MeshStandardMaterial({ color: 0xff5d62, emissive: 0xe12c34, emissiveIntensity: 3 });
+
+// Furnished interior becomes visible when the facade enters X-ray cutaway mode.
+const interior = new THREE.Group(); interior.name = 'InteriorCutaway'; interior.visible = false; scene.add(interior);
+const slabMaterial = new THREE.MeshStandardMaterial({ color: 0xd9e3e7, roughness: 0.72 });
+const wallMaterial = new THREE.MeshPhysicalMaterial({ color: 0xb9d5df, transparent: true, opacity: 0.24, roughness: 0.28, depthWrite: false });
+const deskMaterial = new THREE.MeshStandardMaterial({ color: 0x8e6e52, roughness: 0.62 });
+const floorLevels = [4.7, 8.7, 12.7, 16.7, 21, 25, 29, 33, 37.4];
+floorLevels.forEach((y, floorIndex) => {
+  const width = floorIndex < 4 ? 29 : floorIndex < 7 ? 27 : 28;
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(width, 0.22, 20), slabMaterial); slab.position.y = y; slab.receiveShadow = true; interior.add(slab);
+  const rearWall = new THREE.Mesh(new THREE.BoxGeometry(width - 1, 3.3, 0.12), wallMaterial); rearWall.position.set(0, y + 1.75, -7.2); interior.add(rearWall);
+  const core = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.5, 4.8), new THREE.MeshStandardMaterial({ color: 0x62727b, roughness: 0.78 })); core.position.set(0, y + 1.75, -1); interior.add(core);
+  if (floorIndex === 0) {
+    for (const x of [-4, 0, 4]) { const gate = new THREE.Mesh(new THREE.BoxGeometry(0.35, 1.1, 1.8), cyan); gate.position.set(x, y + 0.65, 6); interior.add(gate); }
+  } else {
+    for (const x of [-10, -6.5, 5.5, 9]) for (const z of [-4.8, 3.2]) {
+      const desk = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 0.9), deskMaterial); desk.position.set(x, y + 0.76, z); interior.add(desk);
+      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.48, 0.07), floorIndex === 8 ? amber : cyan); screen.position.set(x, y + 1.1, z - 0.15); interior.add(screen);
+    }
+  }
+});
+
 const overlays = {};
 for (const key of ['energy', 'comfort', 'workspace', 'security', 'parking', 'plant']) {
   overlays[key] = new THREE.Group(); overlays[key].visible = false; overlays[key].name = key; scene.add(overlays[key]);
@@ -119,6 +154,16 @@ function line(parent, points, color = 0x38d9f5) {
   const object = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.055, 8, false), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85 }));
   object.userData.glow = true; parent.add(object); return object;
 }
+function solutionFlow(parent, points, color = 0x38d9f5, packets = 5) {
+  const curve = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point)));
+  line(parent, points, color);
+  for (let i = 0; i < packets; i++) {
+    const packet = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 10), new THREE.MeshBasicMaterial({ color }));
+    packet.userData.flowPath = curve; packet.userData.flowOffset = i / packets; parent.add(packet);
+  }
+  const platform = new THREE.Mesh(new THREE.OctahedronGeometry(0.8, 1), cyan);
+  platform.position.copy(curve.getPointAt(0.5)); platform.userData.pulse = true; platform.userData.platform = true; parent.add(platform);
+}
 function floorHalo(parent, y, scale = 1) {
   const halo = new THREE.Mesh(new THREE.RingGeometry(13 * scale, 13.08 * scale, 80), cyanGhost);
   halo.rotation.x = -Math.PI / 2; halo.position.y = y; parent.add(halo); return halo;
@@ -131,6 +176,7 @@ for (const [x, z] of [[-8, -5], [-3, -5], [2, -5], [7, -5], [-8, 1], [-3, 1], [2
 }
 line(overlays.energy, [[0, 43, 0], [15.5, 43, 0], [15.5, 4, 0]]);
 for (const y of [5, 9, 13, 17, 21, 25, 29, 33, 37]) orb(overlays.energy, [15.5, y, 0], 0.25);
+solutionFlow(overlays.energy, [[0, 43, 0], [0, 24, -1], [15.5, 20, 0], [8, 12, 3]], 0x38d9f5, 7);
 
 // Comfort — floor slices and moving air particles.
 for (const y of [9, 17, 25, 33]) {
@@ -140,6 +186,7 @@ for (const y of [9, 17, 25, 33]) {
     particle.userData.air = { origin: y + 0.8, offset: Math.random() * 3 };
   }
 }
+solutionFlow(overlays.comfort, [[-9, 25, 4], [0, 24, -1], [-8, 21, -4], [7, 21, 3]], 0x38d9f5, 6);
 
 // Workspace — occupied points distributed by floor.
 for (const y of [7, 11, 15, 23, 27, 31, 35]) {
@@ -149,6 +196,7 @@ for (const y of [7, 11, 15, 23, 27, 31, 35]) {
   }
 }
 floorHalo(overlays.workspace, 35, 1.08);
+solutionFlow(overlays.workspace, [[-9, 31, 2], [0, 24, -1], [8, 35, 2]], 0xffb066, 6);
 
 // Security — lobby control ring, readers and camera fields.
 floorHalo(overlays.security, 0.3, 1.28);
@@ -160,6 +208,7 @@ for (const [x, y, z] of [[-15, 4, 12], [15, 4, 12], [-14, 20, 10], [14, 32, 8]])
   const cone = new THREE.Mesh(new THREE.ConeGeometry(3.5, 9, 24, 1, true), cyanGhost);
   cone.position.set(x, y - 3.5, z); cone.rotation.x = Math.PI; overlays.security.add(cone);
 }
+solutionFlow(overlays.security, [[0, 4.8, 13], [0, 8, -1], [8, 16, 4]], 0x38d9f5, 5);
 
 // Parking — an illuminated B1 section beneath the tower.
 const parkingPlate = new THREE.Mesh(new THREE.BoxGeometry(34, 2.8, 25), new THREE.MeshPhysicalMaterial({ color: 0x10222c, transparent: true, opacity: 0.62, roughness: 0.45 }));
@@ -170,6 +219,7 @@ for (const x of [-11, -5, 1, 7]) for (const z of [-6, 5]) {
 for (const x of [-10, -4, 2]) {
   const car = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1, 1.8), x === 2 ? cyan : amber); car.position.set(x, -0.05, -6); overlays.parking.add(car);
 }
+solutionFlow(overlays.parking, [[-15, -1, 8], [0, -1, -1], [9, -1, -6]], 0x38d9f5, 5);
 
 // Plant — B2 equipment, pipe network and warning on Chiller-03.
 const plantPlate = new THREE.Mesh(new THREE.BoxGeometry(34, 4.5, 25), new THREE.MeshPhysicalMaterial({ color: 0x0c1b24, transparent: true, opacity: 0.72, roughness: 0.55 }));
@@ -179,6 +229,7 @@ for (const x of [-10, 0, 10]) {
   chiller.rotation.z = Math.PI / 2; chiller.position.set(x, -5, 0); chiller.userData.pulse = x === 10; overlays.plant.add(chiller);
   line(overlays.plant, [[x, -3, -3], [x, -3, 4], [0, -3, 7]], x === 10 ? 0xff5d62 : 0x38d9f5);
 }
+solutionFlow(overlays.plant, [[10, -5, 0], [0, -5, -1], [0, 12, -1], [8, 21, 2]], 0xff5d62, 7);
 
 const stories = {
   overview: { number: '01', label: 'THE LIVING BUILDING', headline: 'อาคารที่มองเห็น<br><em>อนาคต</em>', description: 'ทุกพื้นที่ ทุกระบบ และทุกเหตุการณ์ เชื่อมอยู่บน Digital Twin เดียว เพื่อให้ทีมอาคารตัดสินใจก่อนที่ปัญหาจะเกิด', impact: 'ลดพลังงาน 18%', status: 'ALL SYSTEMS OPTIMAL', camera: [58, 38, 62], target: [0, 18, 0], readings: [['ENERGY NOW', '286', 'kW'], ['OCCUPANCY', '428', 'people'], ['AIR QUALITY', '612', 'ppm CO₂']] },
@@ -190,12 +241,27 @@ const stories = {
   plant: { number: '07', label: 'PLANT INTELLIGENCE', headline: 'รู้ก่อนเครื่องจักร<br><em>หยุดทำงาน</em>', description: 'Digital Twin ชี้ Chiller-03 ที่ค่า ΔT ผิดปกติ เชื่อมผลกระทบกับพื้นที่และจัดลำดับการตรวจสอบให้ทีมอาคาร', impact: 'เลี่ยง Downtime 4 ชั่วโมง', status: '1 SIMULATED ALERT', camera: [43, -1, 40], target: [0, -5, 0], readings: [['CHILLER ΔT', '9.8', '°C'], ['EFFICIENCY', '0.71', 'kW/RT'], ['ACTION', '2', 'hours']] }
 };
 
+const solutionSteps = {
+  overview: [['COLLECT', 'รับข้อมูลจากทุกระบบ'], ['UNDERSTAND', 'เชื่อมเหตุการณ์กับพื้นที่'], ['ACT', 'สั่งการและติดตามผล']],
+  energy: [['SENSE', 'อ่าน Solar และ Smart Meter'], ['OPTIMIZE', 'คาดการณ์โหลดและ Peak'], ['CONTROL', 'ปรับโหลดและกักเก็บพลังงาน']],
+  comfort: [['SENSE', 'วัดคน CO₂ และ PM2.5'], ['DECIDE', 'คำนวณอากาศที่ต้องใช้'], ['RESPOND', 'สั่ง AHU และ Fresh Air']],
+  workspace: [['DETECT', 'เห็นโต๊ะและห้องที่ใช้งาน'], ['PREDICT', 'คาดการณ์ความหนาแน่น'], ['PREPARE', 'เตรียมห้อง แสง และอากาศ']],
+  security: [['IDENTIFY', 'อ่าน QR ใบหน้า และบัตร'], ['VERIFY', 'ตรวจสิทธิ์และเส้นทาง'], ['PROTECT', 'เปิดประตูและติดตามด้วย CCTV']],
+  parking: [['RECOGNIZE', 'อ่านป้ายทะเบียนที่ทางเข้า'], ['GUIDE', 'เลือกช่องและเส้นทางที่เหมาะ'], ['CHARGE', 'จัดคิวและกำลัง EV Charger']],
+  plant: [['MONITOR', 'อ่านค่า Chiller และ Pump'], ['DETECT', 'พบ ΔT เบี่ยงเบนจากปกติ'], ['RESOLVE', 'แจ้งงานและปรับระบบสำรอง']]
+};
+
 let current = 'overview', tween = 1, tourTimer, tourIndex = 0;
 const fromCamera = new THREE.Vector3(), fromTarget = new THREE.Vector3(), toCamera = new THREE.Vector3(), toTarget = new THREE.Vector3();
 function selectChapter(name, manual = true) {
   current = name; const story = stories[name];
   fromCamera.copy(camera.position); fromTarget.copy(controls.target); toCamera.fromArray(story.camera); toTarget.fromArray(story.target); tween = 0; controls.enabled = false;
   Object.entries(overlays).forEach(([key, group]) => group.visible = key === name);
+  const cutaway = name !== 'overview';
+  interior.visible = cutaway && name !== 'parking' && name !== 'plant';
+  setArchitectureCutaway(cutaway);
+  ground.visible = name !== 'parking' && name !== 'plant';
+  innerCourt.visible = ground.visible; grid.visible = ground.visible;
   document.querySelectorAll('.chapter').forEach(button => button.classList.toggle('active', button.dataset.chapter === name));
   document.querySelector('#chapterNumber').textContent = story.number;
   document.querySelector('#chapterLabel').textContent = story.label;
@@ -204,6 +270,7 @@ function selectChapter(name, manual = true) {
   document.querySelector('#impact').textContent = story.impact;
   document.querySelector('#statusText').textContent = story.status;
   document.querySelector('#readings').innerHTML = story.readings.map(([label, value, unit]) => `<div><small>${label}</small><strong>${value}</strong><span>${unit}</span></div>`).join('');
+  document.querySelector('#solutionFlow').innerHTML = solutionSteps[name].map(([label, text], index) => `${index ? '<i></i>' : ''}<div class="flow-step${index === 0 ? ' active' : ''}"><span>0${index + 1}</span><div><small>${label}</small><b>${text}</b></div></div>`).join('');
   document.querySelector('#floorProgress').style.height = `${22 + Number(story.number) * 10}%`;
   if (manual && tourTimer) stopTour();
 }
@@ -239,7 +306,10 @@ function animate() {
     if (object.userData.glow && object.material) object.material.opacity = 0.58 + Math.sin(elapsed * 2 + object.id) * 0.3;
     if (object.userData.air) object.position.y = object.userData.air.origin - ((elapsed * 0.55 + object.userData.air.offset) % 1.4);
     if (object.userData.float) object.position.y += Math.sin(elapsed * 1.8 + object.userData.float) * 0.0015;
+    if (object.userData.flowPath) object.position.copy(object.userData.flowPath.getPointAt((elapsed * 0.11 + object.userData.flowOffset) % 1));
   }));
+  const activeFlowStep = Math.floor(elapsed / 3.2) % 3;
+  document.querySelectorAll('.flow-step').forEach((step, index) => step.classList.toggle('active', index === activeFlowStep));
   if (current === 'overview' && !controls.enabled) tower.rotation.y = Math.sin(elapsed * 0.12) * 0.035;
   controls.update(); composer.render();
 }
