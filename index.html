@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#09111f" />
+    <title>Lumen Building — Smart Building 3D</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="scene" aria-label="โมเดลอาคารสำนักงานอัจฉริยะแบบสามมิติ"></canvas>
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Lumen Building home"><span class="brand-mark"></span><span>Lumen Building</span></a>
+        <div class="top-actions"><span class="demo-label">ข้อมูลจำลอง</span><button class="quiet" id="autoRotate" type="button" aria-pressed="false">หมุนอาคาร</button><button class="primary" type="button">เข้าสู่ Setup Wizard</button></div>
+      </header>
+
+      <main class="story">
+        <p class="context">Smart Building Experience</p>
+        <h1>มองเห็นทั้งอาคาร<br>ก่อนปัญหาจะเกิดขึ้น</h1>
+        <p class="intro">ทุกระบบ พื้นที่ และเหตุการณ์เชื่อมอยู่บนโมเดลเดียว สำรวจอาคารหรือให้เราพาชมเรื่องราวภายใน 3 นาที</p>
+        <div class="view-switcher" role="group" aria-label="เลือกมุมมองอาคาร">
+          <button class="view active" data-view="exterior" type="button"><span>01</span> ภายนอก</button>
+          <button class="view" data-view="cutaway" type="button"><span>02</span> เปิดภายใน</button>
+          <button class="view" data-view="plant" type="button"><span>03</span> ห้องเครื่อง</button>
+        </div>
+      </main>
+
+      <aside class="system-panel" aria-live="polite">
+        <div class="panel-head"><span class="live-dot"></span><span id="systemState">ทุกระบบทำงานปกติ</span></div>
+        <div class="selected-copy">
+          <p id="systemKicker">ภาพรวมอาคาร · Building overview</p>
+          <h2 id="systemTitle">พร้อมทำงาน<br>เป็นระบบเดียว</h2>
+          <p id="systemDescription">อาคาร 8 ชั้นเชื่อมพลังงาน สภาพแวดล้อม ความปลอดภัย และห้องเครื่องเข้าด้วยกัน</p>
+        </div>
+        <dl class="metrics">
+          <div><dt>การใช้พลังงานวันนี้</dt><dd>1,284 <small>kWh</small></dd></div>
+          <div><dt>ผู้ใช้อาคาร</dt><dd>428 <small>คน</small></dd></div>
+          <div><dt>คุณภาพอากาศ</dt><dd>ดี <small>CO₂ 612 ppm</small></dd></div>
+        </dl>
+      </aside>
+
+      <div class="floor-rail"><span>R</span><div class="rail-line"><i id="railFill"></i></div><span>B2</span></div>
+      <div class="hint">ลากเพื่อหมุน · Scroll เพื่อซูม</div>
+    </div>
+    <script src="/src/three.js"></script>
+    <script src="/src/main.js"></script>
+  </body>
+</html>
