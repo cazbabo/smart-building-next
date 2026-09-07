@@ -1,6 +1,6 @@
 # ONE Building
 
-Cinematic Smart Building presentation built around a validated glTF office model. The experience combines a guided executive story with a free-explore mode and product-specific digital-twin layers.
+Cinematic Smart Building presentation built around a polished parametric office tower. The experience combines a guided executive story with a free-explore mode and product-specific digital-twin layers.
 
 ## Run locally
 
@@ -28,4 +28,4 @@ Vite writes the production site to `dist/` for Vercel deployment.
 - Parking & EV
 - Plant Intelligence
 
-The 42 m building contains 10 floors across six distinct massing sections, a composed lobby facade, sky-garden and meeting bands, and rooftop solar equipment. The GLB passed Khronos validation with no errors or warnings.
+The building is generated from deterministic Three.js source with a transparent double-height lobby, deliberate curtain-wall rhythm, vertical aluminium fins, two planted sky terraces, a glazed atrium blade, and rooftop solar equipment. The model source lives in `src/building.js` so architectural proportions and materials remain editable.

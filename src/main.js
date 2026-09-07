@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { createPremiumBuilding } from './building.js';
 
 const canvas = document.querySelector('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
@@ -19,8 +19,8 @@ renderer.toneMappingExposure = 1.18;
 renderer.localClippingEnabled = true;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x060b12);
-scene.fog = new THREE.FogExp2(0x07101a, 0.0085);
+scene.background = new THREE.Color(0x0b1822);
+scene.fog = new THREE.FogExp2(0x0b1822, 0.0085);
 const camera = new THREE.PerspectiveCamera(32, innerWidth / innerHeight, 0.1, 500);
 camera.position.set(58, 38, 62);
 
@@ -60,7 +60,7 @@ for (const radius of [31, 39, 48]) {
 }
 
 const grid = new THREE.GridHelper(170, 34, 0x19313c, 0x132631);
-grid.material.transparent = true; grid.material.opacity = 0.28; scene.add(grid);
+grid.material.transparent = true; grid.material.opacity = 0.14; scene.add(grid);
 const skyline = new THREE.Group(); scene.add(skyline);
 for (let i = 0; i < 34; i++) {
   const angle = i / 34 * Math.PI * 2;
@@ -70,6 +70,7 @@ for (let i = 0; i < 34; i++) {
   block.position.set(Math.cos(angle) * distance, height / 2, Math.sin(angle) * distance);
   skyline.add(block);
 }
+skyline.visible = false;
 
 const hemi = new THREE.HemisphereLight(0xa8d9ee, 0x05080d, 1.5); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xe4f4ff, 4.6); sun.position.set(-26, 62, 34); sun.castShadow = true;
@@ -78,7 +79,9 @@ const cyanRim = new THREE.SpotLight(0x38d9f5, 1800, 140, 0.52, 0.9); cyanRim.pos
 const warmRim = new THREE.SpotLight(0xffa45b, 1400, 120, 0.58, 1); warmRim.position.set(-45, 28, -20); warmRim.target.position.set(0, 16, 0); scene.add(warmRim, warmRim.target);
 
 const tower = new THREE.Group(); tower.name = 'LumenHQ'; scene.add(tower);
-let architecture;
+const premiumBuilding = createPremiumBuilding();
+const architecture = premiumBuilding.architecture;
+tower.add(premiumBuilding.group);
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.8);
 function setArchitectureCutaway(enabled) {
   if (!architecture) return;
@@ -88,30 +91,9 @@ function setArchitectureCutaway(enabled) {
     materials.forEach(material => { material.clippingPlanes = enabled ? [cutPlane] : []; material.clipShadows = true; material.needsUpdate = true; });
   });
 }
-new GLTFLoader().load('/assets/lumen-hq.glb', ({ scene: model }) => {
-  architecture = model;
-  const bounds = new THREE.Box3().setFromObject(model);
-  const center = bounds.getCenter(new THREE.Vector3());
-  model.position.set(-center.x, -bounds.min.y, -center.z);
-  model.traverse(object => {
-    if (!object.isMesh) return;
-    object.castShadow = true; object.receiveShadow = true;
-    if (object.material) {
-      object.material = Array.isArray(object.material) ? object.material.map(material => material.clone()) : object.material.clone();
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      materials.forEach(material => {
-        material.envMapIntensity = 1.35;
-        if (/window|glass/i.test(material.name)) { material.metalness = 0.15; material.roughness = 0.14; }
-      });
-    }
-  });
-  tower.add(model);
-  setArchitectureCutaway(current !== 'overview');
+requestAnimationFrame(() => {
+  document.querySelector('#loadPercent').textContent = '100%';
   document.querySelector('#loader').classList.add('done');
-}, (event) => {
-  if (event.total) document.querySelector('#loadPercent').textContent = `${Math.round(event.loaded / event.total * 100)}%`;
-}, () => {
-  document.querySelector('#loader p').textContent = 'ไม่สามารถเปิดโมเดลได้';
 });
 
 const cyan = new THREE.MeshStandardMaterial({ color: 0x38d9f5, emissive: 0x0aa9c6, emissiveIntensity: 3, roughness: 0.25 });
