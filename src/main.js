@@ -138,7 +138,9 @@ function animate(time){
  if(transition<1){transition=Math.min(1,transition+dt*1.5);const ease=1-(1-transition)**3;camera.position.lerpVectors(fromPosition,toPosition,ease);controls.target.lerpVectors(fromTarget,toTarget,ease);dirty=true;}
  controls.update(dt);
  if(!basic||dirty||((rotating||activeScene)&&time-lastRender>160)){
-  activeScene?.animate(elapsed,reduced);renderer.render(scene,camera);updateLabels();dirty=false;lastRender=time;
+  activeScene?.animate(elapsed,reduced);renderer.render(scene,camera);
+  if(basic)renderer.domElement.style.backgroundColor='transparent';
+  updateLabels();dirty=false;lastRender=time;
   if(!$('#loader').classList.contains('done'))$('#loader').classList.add('done');
  }
 }
