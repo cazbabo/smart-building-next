@@ -33,7 +33,7 @@
         <div class="eyebrow"><span id="chapterNumber">01</span><i></i><span id="chapterLabel">THE LIVING BUILDING</span></div>
         <h1 id="headline">อาคารที่มองเห็น<br><em>อนาคต</em></h1>
         <p id="description">ทุกพื้นที่ ทุกระบบ และทุกเหตุการณ์ เชื่อมอยู่บน Digital Twin เดียว เพื่อให้ทีมอาคารตัดสินใจก่อนที่ปัญหาจะเกิด</p>
-        <div class="chapter-impact"><small>BUSINESS OUTCOME</small><strong id="impact">ลดพลังงาน 18%</strong></div>
+        <div class="chapter-impact"><div><small>BUSINESS OUTCOME</small><strong id="impact">ลดพลังงาน 18%</strong></div><button id="detailButton" type="button">เจาะลึก Solution <span>→</span></button></div>
         <div class="solution-flow" id="solutionFlow" aria-label="ขั้นตอนการทำงานของระบบ">
           <div class="flow-step active"><span>01</span><div><small>COLLECT</small><b>รับข้อมูลจากทุกระบบ</b></div></div>
           <i></i>
@@ -42,6 +42,17 @@
           <div class="flow-step"><span>03</span><div><small>ACT</small><b>สั่งการและติดตามผล</b></div></div>
         </div>
       </main>
+
+      <section class="detail-panel" id="detailPanel" aria-live="polite">
+        <header><div><small id="detailSystem">ENERGY MANAGEMENT</small><h2 id="detailTitle">ระบบทำงานอย่างไร</h2></div><button id="closeDetail" type="button" aria-label="ปิดรายละเอียด">×</button></header>
+        <div class="detail-progress" id="detailProgress"></div>
+        <div class="detail-stage"><span id="detailStageNumber">01 / 04</span><h3 id="detailStageTitle">รับข้อมูลจากอุปกรณ์</h3><p id="detailStageDescription">อ่านค่าจากอุปกรณ์ภายในอาคารและส่งเข้าสู่แพลตฟอร์ม</p></div>
+        <dl class="technical-data" id="technicalData"></dl>
+        <div class="decision-box"><small>PLATFORM LOGIC</small><p id="decisionLogic">วิเคราะห์ข้อมูลและเลือกการตอบสนองที่เหมาะสม</p></div>
+        <div class="detail-result"><small>RESULT</small><strong id="detailResult">ระบบตอบสนองอัตโนมัติ</strong></div>
+        <footer><button id="previousStage" type="button">← ก่อนหน้า</button><button id="nextStage" type="button">ขั้นตอนถัดไป →</button></footer>
+      </section>
+      <div class="detail-focus-ring" aria-hidden="true"></div>
 
       <aside class="chapters" aria-label="Smart Building systems">
         <button class="chapter active" data-chapter="overview" type="button"><span>01</span><div><b>ภาพรวมอาคาร</b><small>Living Digital Twin</small></div></button>

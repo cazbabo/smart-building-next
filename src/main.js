@@ -251,11 +251,87 @@ const solutionSteps = {
   plant: [['MONITOR', 'อ่านค่า Chiller และ Pump'], ['DETECT', 'พบ ΔT เบี่ยงเบนจากปกติ'], ['RESOLVE', 'แจ้งงานและปรับระบบสำรอง']]
 };
 
-let current = 'overview', tween = 1, tourTimer, tourIndex = 0;
+const deepDiveScenes = {
+  overview: [
+    { title: 'เชื่อมต่อทุกระบบ', description: 'Gateway รับข้อมูลจาก BMS, Meter, Access, Parking และอุปกรณ์ IoT ด้วย timestamp เดียวกัน', data: [['CONNECTED POINTS', '12,480', 'points'], ['PROTOCOLS', '7', 'types'], ['UPDATE', '5', 'sec']], logic: 'Normalize tag และผูก Device ID เข้ากับชั้น ห้อง และอุปกรณ์ใน Digital Twin', result: 'ข้อมูลจากทุกระบบอ่านร่วมกันได้', camera: [38, 26, 36], target: [0, 19, 0] },
+    { title: 'สร้างบริบทของอาคาร', description: 'สถานะไม่ได้แสดงเป็นตารางอย่างเดียว แต่ผูกกลับไปยังพื้นที่ คน และระบบที่ได้รับผลกระทบ', data: [['FLOORS', '9', 'levels'], ['ASSETS', '326', 'units'], ['RELATIONS', '1,842', 'links']], logic: 'Knowledge graph เชื่อม Sensor → Equipment → Zone → Occupant → Business service', result: 'รู้ว่าค่าที่เปลี่ยนกระทบอะไรต่อ', camera: [34, 23, 31], target: [0, 20, 0] },
+    { title: 'วิเคราะห์เหตุการณ์', description: 'ระบบเปรียบเทียบค่าปัจจุบันกับ baseline, schedule และความสัมพันธ์ของอุปกรณ์ใกล้เคียง', data: [['RULES', '48', 'active'], ['ANOMALY', '1', 'event'], ['CONFIDENCE', '94', '%']], logic: 'รวม Rule engine กับ anomaly detection เพื่อลด alarm ที่ไม่เกี่ยวข้อง', result: 'เหลือเฉพาะเหตุการณ์ที่ทีมต้องทำ', camera: [31, 18, 29], target: [0, 15, -1] },
+    { title: 'สั่งการและยืนยันผล', description: 'Platform ส่งคำสั่งกลับไปยังระบบต้นทางและติดตามค่าหลังสั่งการ เพื่อยืนยันว่าอาคารตอบสนองจริง', data: [['ACTIONS', '16', 'today'], ['AUTO RESOLVED', '12', 'events'], ['SLA', '99.2', '%']], logic: 'ใช้ policy และ approval level กำหนดว่าเหตุการณ์ใดสั่งอัตโนมัติหรือส่งให้คนอนุมัติ', result: 'ปิดวงจรจากข้อมูลไปสู่ผลลัพธ์', camera: [40, 18, 34], target: [5, 13, 0] }
+  ],
+  energy: [
+    { title: 'Solar และ Smart Meter', description: 'อ่านกำลังผลิตจาก Inverter, Main Meter และ Sub-meter ทุกชั้นในช่วงเวลาเดียวกัน', data: [['SOLAR', '74', 'kW'], ['GRID IMPORT', '212', 'kW'], ['POWER FACTOR', '0.97', 'PF']], logic: 'ตรวจสมดุลพลังงานระหว่างแหล่งผลิต โหลด และการนำเข้าจาก Grid', result: 'เห็น Energy balance แบบเรียลไทม์', camera: [31, 52, 27], target: [0, 42, 0] },
+    { title: 'แยกโหลดรายพื้นที่', description: 'Sub-meter แยก HVAC, Lighting, Plug load และ EV เพื่อระบุชั้นที่ใช้เกิน baseline', data: [['HVAC LOAD', '142', 'kW'], ['LIGHTING', '51', 'kW'], ['PLUG LOAD', '46', 'kW']], logic: 'เทียบ kWh/m² กับ occupancy และตารางใช้งานของแต่ละชั้น', result: 'พบชั้น 7 ใช้สูงกว่าปกติ 12%', camera: [35, 30, 27], target: [12, 24, 0] },
+    { title: 'คาดการณ์ Peak', description: 'รวมพยากรณ์อากาศ ตารางประชุม และโหลดปัจจุบัน เพื่อคาดการณ์ Demand ใน 30 นาทีข้างหน้า', data: [['FORECAST PEAK', '328', 'kW'], ['CONTRACT LIMIT', '310', 'kW'], ['WINDOW', '30', 'min']], logic: 'Optimization engine เลือกโหลดที่เลื่อนได้โดยไม่กระทบ Comfort', result: 'เตรียมลด Peak 18 kW ก่อนเกิดจริง', camera: [31, 27, 29], target: [0, 24, -1] },
+    { title: 'สั่งลดโหลดและวัดผล', description: 'ปรับ AHU setpoint, เลื่อน EV charging และใช้ Solar ให้มากขึ้น แล้ววัด Peak หลังดำเนินการ', data: [['LOAD SHED', '21', 'kW'], ['COMFORT CHANGE', '0.3', '°C'], ['SAVING', '11,600', 'THB']], logic: 'Guardrail ป้องกันไม่ให้อุณหภูมิหรือคุณภาพอากาศหลุดเกณฑ์ระหว่างลดโหลด', result: 'Peak อยู่ต่ำกว่า Contract limit', camera: [38, 18, 31], target: [8, 13, 2] }
+  ],
+  comfort: [
+    { title: 'ตรวจสภาพแต่ละ Zone', description: 'เซนเซอร์วัด CO₂, PM2.5, อุณหภูมิ, ความชื้น และจำนวนคนในทุกพื้นที่ใช้งาน', data: [['CO₂', '612', 'ppm'], ['PM2.5', '8', 'μg/m³'], ['RH', '54', '%']], logic: 'ตรวจคุณภาพข้อมูลและใช้ค่าเฉลี่ยหลาย Sensor เพื่อลด false reading', result: 'ชั้น 6 ห้องประชุมเริ่มมี CO₂ สูงขึ้น', camera: [37, 25, 29], target: [-7, 24, 3] },
+    { title: 'คำนวณอากาศที่ต้องใช้', description: 'Platform คำนวณ Fresh Air และ Cooling demand จากจำนวนคนจริงแทนการเดินเครื่องเต็มตลอดวัน', data: [['PEOPLE', '24', 'persons'], ['FRESH AIR', '480', 'm³/h'], ['COOLING', '18.2', 'kW']], logic: 'Demand-controlled ventilation รักษา CO₂ ต่ำกว่า 800 ppm โดยใช้พลังงานต่ำสุด', result: 'เพิ่ม Fresh Air เฉพาะ Zone ที่ต้องการ', camera: [32, 26, 28], target: [0, 24, -1] },
+    { title: 'สั่ง AHU และ VAV', description: 'BMS ปรับ Damper, Fan speed และ VAV setpoint พร้อมแสดงเส้นทางลมเข้าสู่พื้นที่', data: [['DAMPER', '68', '%'], ['FAN SPEED', '54', 'Hz'], ['SAT', '13.5', '°C']], logic: 'PID setpoint ถูกจำกัดด้วย Comfort policy และสถานะ Chiller plant', result: 'ปริมาณลมเพิ่มโดยไม่เปิดทั้งชั้น', camera: [35, 22, 25], target: [-7, 21, -3] },
+    { title: 'ยืนยันคุณภาพอากาศ', description: 'ระบบติดตามค่า CO₂ หลังสั่งการและลด Fan speed เมื่อค่ากลับเข้าเป้าหมาย', data: [['CO₂ AFTER', '684', 'ppm'], ['RESPONSE', '7', 'min'], ['ENERGY SAVED', '8.4', '%']], logic: 'Closed-loop verification เปรียบเทียบผลจริงกับผลที่คาดการณ์ไว้', result: 'Comfort กลับสู่เป้าหมายภายใน 7 นาที', camera: [40, 25, 32], target: [5, 21, 3] }
+  ],
+  workspace: [
+    { title: 'รวม Booking และ Occupancy', description: 'ข้อมูลจองห้องถูกตรวจสอบกับ Presence sensor เพื่อรู้ว่าห้องถูกใช้งานจริงหรือเป็น No-show', data: [['BOOKED', '18', 'rooms'], ['OCCUPIED', '15', 'rooms'], ['NO-SHOW', '3', 'rooms']], logic: 'หากไม่พบคนภายใน 15 นาที ระบบคืนห้องเข้าสู่ inventory อัตโนมัติ', result: 'คืนห้องว่างให้พนักงาน 3 ห้อง', camera: [34, 40, 29], target: [0, 35, 2] },
+    { title: 'วิเคราะห์ความหนาแน่น', description: 'Heatmap แสดงจำนวนคนราย Zone และแนวโน้มการย้ายพื้นที่ในช่วงถัดไป', data: [['FLOOR 7', '82', '%'], ['FLOOR 5', '48', '%'], ['FORECAST', '+36', 'people']], logic: 'คาดการณ์จาก Calendar, access event และรูปแบบการใช้งานย้อนหลัง', result: 'แนะนำพื้นที่ชั้น 5 ที่ยังรองรับได้', camera: [35, 29, 27], target: [0, 29, 1] },
+    { title: 'เตรียมพื้นที่อัตโนมัติ', description: 'ก่อนการประชุม ระบบเปิดไฟ ปรับอากาศ และเตรียมอุปกรณ์เฉพาะห้องที่ถูกยืนยันว่าจะใช้งาน', data: [['PRE-COOL', '10', 'min'], ['LIGHT', '65', '%'], ['AV STATUS', 'READY', '']], logic: 'Orchestration เรียก Lighting, HVAC และ Room control ด้วย workflow เดียว', result: 'ห้องพร้อมก่อนผู้ใช้มาถึง', camera: [32, 37, 24], target: [0, 35, -2] },
+    { title: 'สรุปการใช้พื้นที่', description: 'Dashboard เปรียบเทียบพื้นที่ที่มี พื้นที่ที่ใช้จริง และต้นทุนต่อคนสำหรับวางแผนสำนักงาน', data: [['UTILIZATION', '72', '%'], ['COST / SEAT', '8,420', 'THB'], ['TREND', '+22', '%']], logic: 'ตัดข้อมูลส่วนบุคคลออกและเก็บเฉพาะสถิติระดับ Zone', result: 'ตัดสินใจจัดพื้นที่จากข้อมูลจริง', camera: [43, 28, 37], target: [0, 23, 0] }
+  ],
+  security: [
+    { title: 'ลงทะเบียนผู้มาติดต่อ', description: 'ลูกค้าได้รับ QR ก่อนมาถึง พร้อม Host, ช่วงเวลา และพื้นที่ที่ได้รับอนุญาต', data: [['VISITOR', 'V-036', ''], ['VALID', '09:30–11:30', ''], ['DESTINATION', 'L8', '']], logic: 'ตรวจ watchlist, invitation และ policy ของผู้รับเหมาแต่ละประเภท', result: 'สร้างสิทธิ์ชั่วคราวที่ใช้ได้ตามเวลา', camera: [34, 10, 31], target: [0, 5, 8] },
+    { title: 'ยืนยันตัวตนที่ Lobby', description: 'QR Reader ตรวจสิทธิ์ เปิด Turnstile และบันทึกการเข้าอาคารในเหตุการณ์เดียว', data: [['SCAN', 'VALID', ''], ['GATE', 'G-02', ''], ['LATENCY', '180', 'ms']], logic: 'Identity service ตอบกลับ Access controller โดยไม่เปิดสิทธิ์เกินพื้นที่ที่กำหนด', result: 'ผ่านประตูภายใน 0.18 วินาที', camera: [28, 8, 27], target: [0, 5, 7] },
+    { title: 'จำกัดชั้นปลายทาง', description: 'Elevator destination control เปิดเฉพาะชั้น 8 และกำหนดเส้นทางจาก Lobby', data: [['ELEVATOR', 'CAR 03', ''], ['AUTHORIZED', 'L8', ''], ['ETA', '42', 'sec']], logic: 'Access profile ถูกส่งไปยัง Lift system และยกเลิกเมื่อหมดเวลา', result: 'ผู้มาติดต่อไปได้เฉพาะพื้นที่อนุญาต', camera: [30, 21, 24], target: [0, 18, -1] },
+    { title: 'เชื่อม CCTV กับเหตุการณ์', description: 'ถ้าเดินออกนอกเส้นทาง กล้องที่เกี่ยวข้องถูกเรียกขึ้นมาพร้อม timeline เข้าออก', data: [['CAMERA', 'C-18', ''], ['MATCH', '96', '%'], ['INCIDENT', 'NONE', '']], logic: 'Correlation engine รวม Access event, camera zone และ visitor identity โดยไม่ต้องค้นกล้องทีละตัว', result: 'Security เห็นบริบทครบในหน้าจอเดียว', camera: [39, 20, 31], target: [8, 17, 5] }
+  ],
+  parking: [
+    { title: 'อ่านป้ายทะเบียน', description: 'LPR ตรวจทะเบียนที่ทางเข้าและเชื่อมกับพนักงาน ผู้มาติดต่อ หรือรถที่จองล่วงหน้า', data: [['PLATE', '9กข 1337', ''], ['CONFIDENCE', '98.7', '%'], ['TYPE', 'VISITOR', '']], logic: 'ตรวจสิทธิ์ วันหมดอายุ และ blacklist ก่อนเปิดไม้กั้น', result: 'ยืนยันรถโดยไม่ต้องรับบัตร', camera: [34, 2, 31], target: [-14, -1, 7] },
+    { title: 'เลือกช่องจอด', description: 'ระบบเลือกช่องตามประเภทผู้ใช้ จุดหมาย และสถานะจริงของเซนเซอร์แต่ละช่อง', data: [['FREE BAYS', '11', ''], ['ASSIGNED', 'B1-27', ''], ['WALK', '68', 'm']], logic: 'Routing ลดการวนรถและสำรอง EV/Accessible bay ตาม policy', result: 'ส่งเส้นทางไปยังป้ายและ Mobile link', camera: [31, 1, 27], target: [0, -1, 0] },
+    { title: 'จัดการ EV Charging', description: 'Charger อ่านรถ ระดับแบตเตอรี่ และเวลาที่คาดว่าจะออก เพื่อจัดคิวกำลังไฟ', data: [['CHARGERS', '4/8', ''], ['DEMAND', '38', 'kW'], ['DEPARTURE', '17:30', '']], logic: 'กระจายกำลังโดยไม่ทำให้ Building Peak เกิน Contract limit', result: 'รถทุกคันได้พลังงานก่อนเวลาออก', camera: [28, 0, 24], target: [7, -1, -6] },
+    { title: 'ปิด Journey ตอนออก', description: 'ระบบคำนวณเวลาใช้งาน ชาร์จไฟ และเปิดไม้กั้น พร้อมคืนช่องจอดเป็น Available', data: [['DURATION', '2:14', 'hr'], ['ENERGY', '18.6', 'kWh'], ['EXIT', 'CLEARED', '']], logic: 'ส่ง transaction ไป Billing และอัปเดต occupancy ในเวลาเดียวกัน', result: 'ข้อมูล Parking และ Energy ตรงกันทั้งระบบ', camera: [39, 3, 34], target: [0, -1, 2] }
+  ],
+  plant: [
+    { title: 'อ่านค่าจาก Chiller Plant', description: 'เก็บ Supply/Return temperature, Flow, Power และสถานะ Pump ทุก 5 วินาที', data: [['CHWS', '6.8', '°C'], ['CHWR', '16.6', '°C'], ['FLOW', '118', 'L/s']], logic: 'คำนวณ ΔT, Cooling load และ kW/RT จากค่าที่เกิดในเวลาเดียวกัน', result: 'เห็นประสิทธิภาพจริงของ Chiller-03', camera: [28, -1, 25], target: [9, -5, 0] },
+    { title: 'ตรวจพบ ΔT ผิดปกติ', description: 'ΔT สูงขึ้นต่อเนื่อง ขณะที่ Flow และ Load ไม่ได้เพิ่มตาม จึงไม่ใช่ความต้องการจากอาคาร', data: [['ΔT', '9.8', '°C'], ['BASELINE', '6.2', '°C'], ['CONFIDENCE', '94', '%']], logic: 'Anomaly model เปรียบเทียบกับ Chiller ตัวอื่นและสภาพโหลดเดียวกัน', result: 'จัดประเภทเป็น Heat-transfer degradation', camera: [25, -2, 22], target: [10, -5, 0] },
+    { title: 'ประเมินผลกระทบ', description: 'Digital Twin เชื่อม Chiller-03 กับ AHU และพื้นที่ปลายทาง เพื่อหาชั้นที่จะได้รับผลก่อน', data: [['AFFECTED AHU', '6', 'units'], ['ZONES', '18', ''], ['TIME TO IMPACT', '47', 'min']], logic: 'จำลอง capacity ที่หายไปเทียบกับ Cooling demand ของแต่ละ Zone', result: 'ชั้น 6–8 มีความเสี่ยงสูงสุด', camera: [31, 10, 25], target: [0, 8, -1] },
+    { title: 'สลับระบบและสร้างงาน', description: 'เพิ่มโหลด Chiller-02 ลดโหลด Chiller-03 และสร้าง Work order พร้อมข้อมูลตรวจสอบ', data: [['BACKUP LOAD', '+22', '%'], ['WORK ORDER', 'WO-1842', ''], ['SLA', '2', 'hr']], logic: 'Sequencing ป้องกัน Surge และยืนยันว่าอุณหภูมิ Supply กลับสู่เป้าหมายก่อนปิดเหตุการณ์', result: 'อาคารทำงานต่อโดยไม่มี Downtime', camera: [36, 5, 29], target: [0, 3, 0] }
+  ]
+};
+
+let current = 'overview', tween = 1, tourTimer, tourIndex = 0, detailStageIndex = 0;
 const fromCamera = new THREE.Vector3(), fromTarget = new THREE.Vector3(), toCamera = new THREE.Vector3(), toTarget = new THREE.Vector3();
+function moveCamera(cameraPosition, targetPosition) {
+  fromCamera.copy(camera.position); fromTarget.copy(controls.target);
+  toCamera.fromArray(cameraPosition); toTarget.fromArray(targetPosition); tween = 0; controls.enabled = false;
+}
+function renderDetail(index) {
+  const scenes = deepDiveScenes[current];
+  detailStageIndex = (index + scenes.length) % scenes.length;
+  const detail = scenes[detailStageIndex];
+  document.querySelector('#detailSystem').textContent = stories[current].label;
+  document.querySelector('#detailTitle').textContent = `Deep-dive · ${stories[current].number}`;
+  document.querySelector('#detailStageNumber').textContent = `${String(detailStageIndex + 1).padStart(2, '0')} / ${String(scenes.length).padStart(2, '0')}`;
+  document.querySelector('#detailStageTitle').textContent = detail.title;
+  document.querySelector('#detailStageDescription').textContent = detail.description;
+  document.querySelector('#technicalData').innerHTML = detail.data.map(([label, value, unit]) => `<div><dt>${label}</dt><dd>${value} <small>${unit}</small></dd></div>`).join('');
+  document.querySelector('#decisionLogic').textContent = detail.logic;
+  document.querySelector('#detailResult').textContent = detail.result;
+  document.querySelector('#detailProgress').innerHTML = scenes.map((_, sceneIndex) => `<button class="${sceneIndex === detailStageIndex ? 'active' : sceneIndex < detailStageIndex ? 'done' : ''}" data-detail-index="${sceneIndex}" aria-label="ขั้นตอน ${sceneIndex + 1}"></button>`).join('');
+  document.querySelectorAll('[data-detail-index]').forEach(button => button.addEventListener('click', () => renderDetail(Number(button.dataset.detailIndex))));
+  moveCamera(detail.camera, detail.target);
+}
+function openDetail() {
+  if (tourTimer) stopTour();
+  document.querySelector('#experience').classList.add('detail-open');
+  setArchitectureCutaway(true);
+  interior.visible = current !== 'parking' && current !== 'plant';
+  renderDetail(0);
+}
+function closeDetail() {
+  document.querySelector('#experience').classList.remove('detail-open');
+  selectChapter(current, false);
+}
 function selectChapter(name, manual = true) {
   current = name; const story = stories[name];
-  fromCamera.copy(camera.position); fromTarget.copy(controls.target); toCamera.fromArray(story.camera); toTarget.fromArray(story.target); tween = 0; controls.enabled = false;
+  moveCamera(story.camera, story.target);
   Object.entries(overlays).forEach(([key, group]) => group.visible = key === name);
   const cutaway = name !== 'overview';
   interior.visible = cutaway && name !== 'parking' && name !== 'plant';
@@ -276,6 +352,10 @@ function selectChapter(name, manual = true) {
 }
 function stopTour() { clearInterval(tourTimer); tourTimer = null; document.querySelector('#tourButton').innerHTML = 'เริ่มนำเสนอ <i></i>'; }
 document.querySelectorAll('.chapter').forEach(button => button.addEventListener('click', () => selectChapter(button.dataset.chapter)));
+document.querySelector('#detailButton').addEventListener('click', openDetail);
+document.querySelector('#closeDetail').addEventListener('click', closeDetail);
+document.querySelector('#previousStage').addEventListener('click', () => renderDetail(detailStageIndex - 1));
+document.querySelector('#nextStage').addEventListener('click', () => renderDetail(detailStageIndex + 1));
 document.querySelector('#tourButton').addEventListener('click', () => {
   if (tourTimer) { stopTour(); return; }
   const order = Object.keys(stories); tourIndex = 0; selectChapter(order[0], false);
