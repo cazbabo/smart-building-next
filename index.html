@@ -1,82 +1,17 @@
 <!doctype html>
-<html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#060b12" />
-    <meta name="description" content="Immersive smart building digital twin experience" />
-    <title>ONE Building — A living digital twin</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/src/style.css" />
-  </head>
-  <body>
-    <div class="experience" id="experience">
-      <canvas id="scene" aria-label="โมเดลสามมิติของอาคารสำนักงานอัจฉริยะ"></canvas>
-      <div class="noise"></div>
-      <div class="loader" id="loader"><span></span><p>กำลังเปิด Digital Twin</p><small id="loadPercent">0%</small></div>
-
-      <header class="topbar">
-        <a class="identity" href="#" aria-label="ONE Building">
-          <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 25V9l12-6 12 6v16l-12 6L5 25Z"/><path d="m5 9 12 7 12-7M17 16v15"/></svg>
-          <span><b>ONE</b> Building</span>
-        </a>
-        <div class="modes" role="group" aria-label="Presentation mode">
-          <button class="mode active" data-mode="story" type="button">ชมตามเรื่อง</button>
-          <button class="mode" data-mode="explore" type="button">สำรวจอาคาร</button>
-        </div>
-        <div class="top-meta"><span>Bangkok · 09:41</span><button id="tourButton" type="button">เริ่มนำเสนอ <i></i></button></div>
-      </header>
-
-      <main class="narrative">
-        <div class="eyebrow"><span id="chapterNumber">01</span><i></i><span id="chapterLabel">THE LIVING BUILDING</span></div>
-        <h1 id="headline">อาคารที่มองเห็น<br><em>อนาคต</em></h1>
-        <p id="description">ทุกพื้นที่ ทุกระบบ และทุกเหตุการณ์ เชื่อมอยู่บน Digital Twin เดียว เพื่อให้ทีมอาคารตัดสินใจก่อนที่ปัญหาจะเกิด</p>
-        <div class="chapter-impact"><div><small>BUSINESS OUTCOME</small><strong id="impact">ลดพลังงาน 18%</strong></div><button id="detailButton" type="button">เจาะลึก Solution <span>→</span></button></div>
-        <div class="solution-flow" id="solutionFlow" aria-label="ขั้นตอนการทำงานของระบบ">
-          <div class="flow-step active"><span>01</span><div><small>COLLECT</small><b>รับข้อมูลจากทุกระบบ</b></div></div>
-          <i></i>
-          <div class="flow-step"><span>02</span><div><small>UNDERSTAND</small><b>เชื่อมเหตุการณ์กับพื้นที่</b></div></div>
-          <i></i>
-          <div class="flow-step"><span>03</span><div><small>ACT</small><b>สั่งการและติดตามผล</b></div></div>
-        </div>
-      </main>
-
-      <section class="detail-panel" id="detailPanel" aria-live="polite">
-        <header><div><small id="detailSystem">ENERGY MANAGEMENT</small><h2 id="detailTitle">ระบบทำงานอย่างไร</h2></div><button id="closeDetail" type="button" aria-label="ปิดรายละเอียด">×</button></header>
-        <div class="detail-progress" id="detailProgress"></div>
-        <div class="detail-stage"><span id="detailStageNumber">01 / 04</span><h3 id="detailStageTitle">รับข้อมูลจากอุปกรณ์</h3><p id="detailStageDescription">อ่านค่าจากอุปกรณ์ภายในอาคารและส่งเข้าสู่แพลตฟอร์ม</p></div>
-        <dl class="technical-data" id="technicalData"></dl>
-        <div class="decision-box"><small>PLATFORM LOGIC</small><p id="decisionLogic">วิเคราะห์ข้อมูลและเลือกการตอบสนองที่เหมาะสม</p></div>
-        <div class="detail-result"><small>RESULT</small><strong id="detailResult">ระบบตอบสนองอัตโนมัติ</strong></div>
-        <footer><button id="previousStage" type="button">← ก่อนหน้า</button><button id="nextStage" type="button">ขั้นตอนถัดไป →</button></footer>
-      </section>
-      <div class="detail-focus-ring" aria-hidden="true"></div>
-
-      <aside class="chapters" aria-label="Smart Building systems">
-        <button class="chapter active" data-chapter="overview" type="button"><span>01</span><div><b>ภาพรวมอาคาร</b><small>Living Digital Twin</small></div></button>
-        <button class="chapter" data-chapter="energy" type="button"><span>02</span><div><b>พลังงาน</b><small>Energy Flow</small></div></button>
-        <button class="chapter" data-chapter="comfort" type="button"><span>03</span><div><b>สภาวะภายใน</b><small>HVAC & Air Quality</small></div></button>
-        <button class="chapter" data-chapter="workspace" type="button"><span>04</span><div><b>พื้นที่ทำงาน</b><small>People & Workspace</small></div></button>
-        <button class="chapter" data-chapter="security" type="button"><span>05</span><div><b>ความปลอดภัย</b><small>Access & CCTV</small></div></button>
-        <button class="chapter" data-chapter="parking" type="button"><span>06</span><div><b>การเดินทาง</b><small>Parking & EV</small></div></button>
-        <button class="chapter" data-chapter="plant" type="button"><span>07</span><div><b>ระบบเครื่องกล</b><small>Plant Intelligence</small></div></button>
-      </aside>
-
-      <section class="telemetry" aria-live="polite">
-        <div class="telemetry-title"><span class="status-dot"></span><span id="statusText">ALL SYSTEMS OPTIMAL</span><small>SIMULATED DATA</small></div>
-        <div class="readings" id="readings">
-          <div><small>ENERGY NOW</small><strong>286</strong><span>kW</span></div>
-          <div><small>OCCUPANCY</small><strong>428</strong><span>people</span></div>
-          <div><small>AIR QUALITY</small><strong>612</strong><span>ppm CO₂</span></div>
-        </div>
-      </section>
-
-      <div class="floor-marker"><span>R</span><i><b id="floorProgress"></b></i><span>B2</span></div>
-      <div class="interaction-hint" id="interactionHint"><span></span>ลากเพื่อหมุน · Scroll เพื่อซูม</div>
-      <footer><span>ONE BUILDING / DIGITAL TWIN EXPERIENCE</span><span>PROPOSAL 2026</span></footer>
-    </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
-</html>
+<html lang="th"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="theme-color" content="#09111f"/><meta name="description" content="สำรวจอาคารอัจฉริยะผ่านโมเดลสามมิติและฉากสาธิตการทำงานของแต่ละระบบ"/><title>ONE Building — อาคารที่เข้าใจคุณ</title><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/src/style.css"/></head><body>
+<div class="experience" id="experience">
+<header class="topbar"><a class="identity" href="#" aria-label="ONE Building หน้าหลัก"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 25V9l12-6 12 6v16l-12 6L5 25Z"/><path d="m5 9 12 7 12-7M17 16v15"/></svg><span><b>ONE</b> Building<small>Smart spaces. Better living.</small></span></a><div class="modes" role="group" aria-label="โหมดการนำเสนอ"><button class="mode active" data-mode="story" aria-pressed="true">ชมตามเรื่อง</button><button class="mode" data-mode="explore" aria-pressed="false">สำรวจอาคาร</button></div><button id="tourButton" class="tour-button"><span class="play">▶</span> เริ่มนำเสนอ <small>2 นาที</small></button></header>
+<main class="narrative"><div class="eyebrow"><span id="chapterNumber">01</span><span id="chapterLabel">THE LIVING BUILDING</span></div><h1 id="headline">อาคารที่เข้าใจ<br><em>ทุกความเป็นไป</em></h1><p id="description">เชื่อมพลังงาน พื้นที่ และผู้คนในอาคาร ด้วย Digital Twin ที่ช่วยให้คุณเห็นภาพรวม และเข้าใจทุกระบบที่อยู่เบื้องหลัง</p><div class="chapter-impact"><span class="outcome-label">สิ่งที่ธุรกิจได้รับ</span><strong id="impact">ตัดสินใจจากภาพเดียว</strong></div><button id="detailButton" class="primary-button">ดูการทำงานภายใน <span>↗</span></button><div class="journey-label">จากข้อมูล สู่การลงมือทำ</div><div class="solution-flow" id="solutionFlow"></div><div class="narrative-foot"><span class="status-dot"></span> Interactive building experience</div></main>
+<section class="viewport" id="viewport" aria-label="ฉากสามมิติ"><div class="viewport-heading"><span class="scene-badge"><i></i> DIGITAL TWIN</span><span id="sceneLocation">ONE Building · สำนักงาน</span></div><canvas id="scene" aria-label="โมเดลอาคารสามมิติ หมุนและซูมได้ในโหมดสำรวจ"></canvas><div class="hotspots" id="hotspots"></div><div class="scene-caption"><span id="sceneCaption">ออกแบบให้ทุกระบบ ทำงานร่วมกัน</span><small id="sceneSubcaption">Lobby · 8 ชั้นสำนักงานและห้องประชุม · Rooftop</small></div><div class="view-controls"><button id="resetView" aria-label="กลับมุมกล้องเริ่มต้น">⤾ <span>มุมเริ่มต้น</span></button><button id="rotateView" aria-pressed="false">↻ <span>หมุนอาคาร</span></button></div><div id="renderNotice" class="render-notice" hidden>โหมด 3D พื้นฐาน · เครื่องนี้ไม่รองรับ WebGL</div><div id="loader" class="loader"><span></span><p>กำลังเตรียมอาคารของคุณ</p></div></section>
+<section class="detail-panel" id="detailPanel" aria-label="การทำงานของระบบ" hidden><header><span id="detailSystem"></span><button id="closeDetail" aria-label="ปิดรายละเอียด">✕</button></header><div id="detailProgress" class="detail-progress"></div><div class="detail-stage"><span id="detailStageNumber"></span><h2 id="detailStageTitle"></h2><p id="detailStageDescription"></p></div><dl id="technicalData" class="technical-data"></dl><div class="decision-box"><small>วิธีตัดสินใจ · Platform logic</small><p id="decisionLogic"></p></div><div class="detail-result"><small>ผลลัพธ์ในสถานการณ์สาธิต</small><strong id="detailResult"></strong></div><footer><button id="previousStage">← ก่อนหน้า</button><button id="nextStage">ขั้นตอนถัดไป →</button></footer></section>
+<section class="telemetry" aria-label="ข้อมูลสถานการณ์สาธิต"><div class="telemetry-title"><span class="status-dot"></span><span id="statusText">ระบบพร้อมทำงาน</span><small>ข้อมูลจำลอง</small></div><div class="readings" id="readings"></div></section>
+<nav class="chapters" aria-label="ระบบในอาคาร">
+<button class="chapter active" data-chapter="overview" aria-pressed="true"><span class="chapter-icon">▧</span><div><b>ภาพรวมอาคาร</b><small>Digital Twin</small></div><span class="chapter-index">01</span></button>
+<button class="chapter" data-chapter="energy" aria-pressed="false"><span class="chapter-icon">ϟ</span><div><b>พลังงาน</b><small>Energy</small></div><span class="chapter-index">02</span></button>
+<button class="chapter" data-chapter="comfort" aria-pressed="false"><span class="chapter-icon">≋</span><div><b>อากาศและแสง</b><small>Comfort</small></div><span class="chapter-index">03</span></button>
+<button class="chapter" data-chapter="workspace" aria-pressed="false"><span class="chapter-icon">▦</span><div><b>พื้นที่ทำงาน</b><small>Workspace</small></div><span class="chapter-index">04</span></button>
+<button class="chapter" data-chapter="security" aria-pressed="false"><span class="chapter-icon">◇</span><div><b>ความปลอดภัย</b><small>Security</small></div><span class="chapter-index">05</span></button>
+<button class="chapter" data-chapter="parking" aria-pressed="false"><span class="chapter-icon">P</span><div><b>ที่จอดรถและ EV</b><small>Mobility</small></div><span class="chapter-index">06</span></button>
+<button class="chapter" data-chapter="plant" aria-pressed="false"><span class="chapter-icon">⚙</span><div><b>ระบบเครื่องกล</b><small>Plant</small></div><span class="chapter-index">07</span></button>
+</nav><footer class="page-footer"><span>ONE Building <i>/</i> Smart Building Showcase</span><span>สถานการณ์และค่าทั้งหมดใช้เพื่อสาธิต</span></footer></div><script type="module" src="/src/main.js"></script></body></html>
