@@ -81,6 +81,7 @@ function syncOperations(snapshot){
    $('#statusText').textContent=incident.status==='resolved'?'เหตุจำลองแก้ไขแล้ว':incident.status==='assigned'?'เจ้าหน้าที่รับดำเนินการแล้ว':'มีเหตุจำลองรอตรวจสอบ';
    const readings=stories[current].readings.map(r=>[...r]);
    const index=current==='security'?2:0;
+   if(current==='plant')readings[2]=['OPEN EVENTS',incident.status==='resolved'?'0':'1','event'];
    readings[index]=current==='security'?['ACCESS EVENTS',incident.status==='resolved'?'0':'1','event']:[incident.metric,incident.status==='resolved'?incident.normal:incident.value,incident.unit];
    $('#readings').innerHTML=readings.map(([label,v,unit])=>`<div><small>${label}</small><strong>${v}</strong><span>${unit}</span></div>`).join('');
   }
@@ -176,8 +177,8 @@ function animate(time){
  const dt=Math.min((time-lastTime)/1000,.05);lastTime=time;elapsed+=dt;
  if(transition<1){transition=Math.min(1,transition+dt*1.5);const ease=1-(1-transition)**3;camera.position.lerpVectors(fromPosition,toPosition,ease);controls.target.lerpVectors(fromTarget,toTarget,ease);dirty=true;}
  controls.update(dt);
- if(!basic||dirty||((rotating||activeScene)&&time-lastRender>160)){
-  activeScene?.animate(elapsed,reduced);renderer.render(scene,camera);
+ if(!basic||(time-lastRender>100&&(dirty||rotating))){
+  activeScene?.animate(elapsed,reduced||basic);renderer.render(scene,camera);
   if(basic)renderer.domElement.style.backgroundColor='transparent';
   updateLabels();dirty=false;lastRender=time;
   if(!$('#loader').classList.contains('done'))$('#loader').classList.add('done');

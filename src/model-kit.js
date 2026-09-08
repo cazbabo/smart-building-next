@@ -7,4 +7,13 @@ export function cylinder(parent,r,h,pos,material=palette.dark,segments=12) {cons
 export function tree(parent,x,y,z,s=1) {const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(s);parent.add(g);cylinder(g,.09,1.7,[0,.9,0],palette.wood,6);for(const [dx,dy,dz,r] of [[0,2,0,.85],[-.45,1.8,.2,.55],[.45,2.2,-.1,.6]]){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),palette.leaf);m.position.set(dx,dy,dz);m.scale.y=1.1;m.castShadow=true;g.add(m);}return g;}
 export function desk(parent,x,z,y=0){box(parent,[2.2,.12,1],[x,y+.82,z],palette.wood);for(const dx of [-.9,.9])box(parent,[.08,.78,.7],[x+dx,y+.4,z],palette.dark);box(parent,[.75,.48,.07],[x,y+1.14,z-.21],palette.dark);box(parent,[.65,.37,.02],[x,y+1.14,z-.16],palette.blue);box(parent,[.25,.05,.23],[x,y+.91,z-.2],palette.dark);box(parent,[.65,.12,.65],[x,y+.5,z+1],palette.dark);box(parent,[.65,.6,.12],[x,y+.84,z+1.3],palette.dark);cylinder(parent,.04,.45,[x,y+.24,z+1]);}
 export function pipe(parent,points,color=0x67cbd7,r=.07){const curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)),false,'centripetal');const m=new THREE.Mesh(new THREE.TubeGeometry(curve,24,r,6,false),mat(color,{metalness:.2,roughness:.4}));parent.add(m);return curve;}
-export function room(parent,w=25,d=18){box(parent,[w,.42,d],[0,-.24,0],palette.stone);box(parent,[w+.1,.12,d+.1],[0,-.5,0],palette.dark);box(parent,[w,3.5,.18],[0,1.75,-d/2],palette.white);box(parent,[.18,2,d],[-w/2,1,0],palette.stone);for(let x=-w/2;x<w/2;x+=2)box(parent,[.025,.012,d],[x,.005,0],palette.white);for(let z=-d/2;z<d/2;z+=2)box(parent,[w,.012,.025],[0,.005,z],palette.white);}
+export function room(parent,w=25,d=18,showGrid=true){
+ const floor=box(parent,[w,.42,d],[0,-.24,0],palette.stone);floor.renderOrder=-20;
+ const trim=box(parent,[w+.1,.12,d+.1],[0,-.5,0],palette.dark);trim.renderOrder=-21;
+ const back=box(parent,[w,3.5,.18],[0,1.75,-d/2],palette.white);back.renderOrder=-10;
+ const side=box(parent,[.18,2,d],[-w/2,1,0],palette.stone);side.renderOrder=-10;
+ if(showGrid){
+  for(let x=-w/2;x<w/2;x+=2)box(parent,[.025,.012,d],[x,.005,0],palette.white).renderOrder=-18;
+  for(let z=-d/2;z<d/2;z+=2)box(parent,[w,.012,.025],[0,.005,z],palette.white).renderOrder=-18;
+ }
+}

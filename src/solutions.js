@@ -9,7 +9,7 @@ export function createSolutionScene(key){
   const curve=pipe(group,points,color,.045);
   for(let i=0;i<3;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.11,6,4),new THREE.MeshBasicMaterial({color}));group.add(m);flows.push({mesh:m,curve,offset:i/3});}
  };
- room(group);
+ room(group,25,18,key!=='command');
  const equipment=(x,z,label)=>{const g=new THREE.Group();g.position.set(x,0,z);group.add(g);box(g,[2,2.7,1.4],[0,1.35,0],p.white);box(g,[1.75,2.3,.08],[0,1.4,.74],p.dark);box(g,[.7,.43,.07],[0,2,.81],p.cyan);for(let j=0;j<5;j++)box(g,[1.3,.05,.03],[0,.45+j*.19,.8],p.stone);return g;};
  const meeting=(x,z)=>{
   box(group,[6.2,.15,2.6],[x,.85,z],p.wood);
@@ -19,19 +19,19 @@ export function createSolutionScene(key){
  };
  if(key==='command'){
    // Operations room: a six-system video wall and two rows of staffed consoles.
-   box(group,[24.8,.035,17.7],[0,.04,0],p.dark);
-   box(group,[25,6.6,.35],[0,3.3,-8.7],p.dark);
+   box(group,[24.8,.035,17.7],[0,.04,0],p.dark).renderOrder=-19;
+   box(group,[25,6.6,.35],[0,3.3,-8.7],p.dark).renderOrder=-9;
    const systems=['energy','comfort','workspace','security','parking','plant'];
    systems.forEach((system,index)=>{
     const x=(index%3-1)*7.2,y=index<3?4.95:2.25;
-    box(group,[6.8,2.45,.22],[x,y,-8.42],p.dark);
-    const screen=box(group,[6.5,2.18,.04],[x,y,-8.28],mat(0x183f53,{emissive:0x11374a,emissiveIntensity:.35}));
+    box(group,[6.8,2.45,.22],[x,y,-8.42],p.dark).renderOrder=-8;
+    const screen=box(group,[6.5,2.18,.04],[x,y,-8.28],mat(0x183f53,{emissive:0x11374a,emissiveIntensity:.35}));screen.renderOrder=-7;
     const status=box(group,[.2,.16,.035],[x-2.9,y+.78,-8.22],p.cyan.clone());
     const bars=[];
     for(let j=0;j<9;j++){const height=.3+((j*7+index*3)%11)*.1;bars.push(box(group,[.34,height,.025],[x-2.2+j*.52,y-.75+height/2,-8.21],p.cyan.clone()));}
     box(group,[5.7,.025,.02],[x,y-.8,-8.2],p.blue);
     for(let j=0;j<3;j++)box(group,[.7,.035,.02],[x-2.4+j*1.1,y+.76,-8.19],p.white);
-    screens.push({system,screen,status,bars});
+    status.renderOrder=-6;bars.forEach(b=>b.renderOrder=-6);screens.push({system,screen,status,bars});
    });
    for(const x of [-6,0,6])for(const z of [-2,4]){
     desk(group,x,z);box(group,[1.05,.57,.1],[x+.7,1.17,z-.32],p.dark);box(group,[.91,.44,.03],[x+.7,1.17,z-.25],p.blue);
@@ -114,7 +114,7 @@ export function createSolutionScene(key){
  }
  const focus=new THREE.Mesh(new THREE.RingGeometry(.8,1,32),new THREE.MeshBasicMaterial({color:0x69d8dd,side:THREE.DoubleSide,transparent:true,opacity:.65,depthWrite:false}));focus.rotation.x=-Math.PI/2;group.add(focus);
  function setStage(stage){const active=nodes.find(n=>n.stage===stage)||nodes.at(-1);focus.position.set(active.pos[0],.09,active.pos[2]);moving.forEach(o=>{if(o.kind==='gate')o.mesh.rotation.y=stage>=1?1.2:0;else o.mesh.rotation.z=stage>=1?-.85:0;});}
- function animate(time,reduced){if(!reduced)flows.forEach(f=>f.mesh.position.copy(f.curve.getPointAt((time*.09+f.offset)%1)));}
+ function animate(time,reduced){flows.forEach(f=>f.mesh.position.copy(f.curve.getPointAt(((reduced?0:time*.09)+f.offset)%1)));}
  function setIncident(snapshot){
   const colors={critical:0xe6857e,warning:0xe8bd72,normal:0x72d9bd};
   screens.forEach(({system,status,bars})=>{const issue=snapshot.records.find(r=>r.system===system&&r.status!=='resolved');const color=colors[issue?issue.severity:'normal'];status.material.color.setHex(color);bars.forEach(b=>b.material.color.setHex(color));});
