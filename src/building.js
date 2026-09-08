@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {box,cylinder,tree,palette as p,mat} from './model-kit.js';
 // Terraced office architecture. Structural slabs and facade are actual geometry.
 export function createPremiumBuilding(){
- const group=new THREE.Group();group.name='ONE_TerracedOffice';
+ const group=new THREE.Group();group.name='Mockup_TerracedOffice';
  const base=new THREE.Group();group.add(base);
  box(base,[37,.5,29],[0,0,0],p.stone);box(base,[38,.25,30],[0,-.4,0],p.dark);
  for(let i=0;i<3;i++)box(base,[15-i*2,.18,2.1],[1,.12+i*.17,14.5-i*.7],p.edge);

@@ -1,0 +1,34 @@
+/* Scroll-led architectural storytelling, with the lime brand carried into light. */
+body.story-mode{background:#050a0c;overflow-x:hidden}
+body.story-mode .experience{position:fixed;inset:0;width:100%;height:100dvh;min-height:0;max-width:none;background:#050a0c;overflow:hidden;pointer-events:none}
+body.story-mode .topbar{height:94px;margin:0 40px;border:0;pointer-events:auto;z-index:30;background:linear-gradient(#050a0cf5,transparent)}
+body.story-mode .identity{font-size:21px;min-width:0}body.story-mode .identity small{display:none}body.story-mode .identity svg{width:27px}
+body.story-mode .modes{margin-left:auto;background:none;border:0;border-radius:0;padding:0;gap:22px}
+body.story-mode .mode{padding:7px 0;border-radius:0;background:none;box-shadow:none;color:#a7b1ac;font-size:13px}
+body.story-mode .mode.active{color:var(--accent-soft);border-bottom:1px solid var(--accent)}
+body.story-mode .tour-button{background:none;border:1px solid #61743b;border-radius:30px;color:#d7e4c4;font-size:12px;padding:9px 18px}
+body.story-mode .viewport{position:absolute;left:19%;right:0;top:0;bottom:0;border:0;border-radius:0;background:radial-gradient(ellipse at 57% 49%,#18312c44,transparent 65%);box-shadow:none;overflow:hidden;pointer-events:none}
+body.story-mode .narrative,body.story-mode .telemetry,body.story-mode .chapters,body.story-mode .command-panel,body.story-mode .detail-panel,body.story-mode .viewport-heading,body.story-mode .scene-caption,body.story-mode .hotspots,body.story-mode .view-controls,body.story-mode .render-notice,body.story-mode .page-footer{display:none!important}
+body.story-mode .loader{background:#050a0c}
+#cinematicStory{position:relative;z-index:5;pointer-events:none;color:#f0f4ed}
+.story-section{position:relative;min-height:112vh;padding:17vh 5vw 14vh;display:flex;align-items:center;justify-content:space-between;gap:35vw;pointer-events:none}
+.story-section:first-child{min-height:100vh;align-items:flex-end;padding-bottom:12vh}
+.story-section:last-of-type{min-height:100vh}
+.story-copy{max-width:550px;flex:0 0 auto;width:42vw;text-shadow:0 2px 25px #050a0caa}
+.story-kicker{margin:0 0 20px;font:500 11px Manrope;letter-spacing:.06em;color:#9cab9b}.story-kicker>span{font:400 13px 'Noto Sans Thai',sans-serif;letter-spacing:0;margin-left:20px;color:#b3c6a1}
+.story-copy :is(h1,h2){font:400 clamp(45px,5.3vw,84px)/1.3 'Noto Sans Thai',sans-serif;letter-spacing:-.055em;margin:0;text-wrap:balance}
+.story-note{position:absolute;right:5vw;bottom:13vh;width:245px;text-shadow:0 1px 12px #050a0c;pointer-events:auto}
+.story-note>span{font-size:11px;line-height:1.7;color:#c4d39f;display:block;margin-bottom:15px}
+.story-note p{font-size:14px;line-height:1.9;color:#b4beb6;margin:0 0 22px}
+.story-note button{width:100%;border:1px solid #8fa35f;background:#0c160dc9;backdrop-filter:blur(8px);border-radius:40px;padding:13px 18px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#e0edbf;transition:background .2s}
+.story-note button:hover{background:#b0d233;color:#19220c}.story-note button>span{font-size:18px}
+.story-position{position:fixed;z-index:25;right:28px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px;pointer-events:auto}
+.story-position button{border:0;background:none;display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:4px;color:#a7b89a}
+.story-position button i{width:5px;height:5px;border:1px solid #7d8e6c;border-radius:50%;display:block}.story-position button.active i{background:#b0d233;border-color:#b0d233;box-shadow:0 0 12px #b0d23377}
+.story-position button>span{font-size:10px;opacity:0;transition:opacity .15s}.story-position button:hover>span,.story-position button:focus-visible>span{opacity:1}
+.story-scroll-hint{position:fixed;z-index:25;bottom:22px;left:50%;transform:translateX(-50%);font-size:11px;color:#92a186;display:flex;align-items:center;gap:18px}
+.story-scroll-hint>span{font-size:20px;color:#bfd484}
+body.story-mode[data-story-step="0"] .viewport>svg{filter:drop-shadow(0 0 6px #b0d23340)}
+@media(max-width:1000px){body.story-mode .experience{display:block;padding:0}body.story-mode .topbar{height:86px;margin-inline:25px}.story-section{padding-left:6vw}.story-copy{width:58vw}.story-copy :is(h1,h2){font-size:clamp(44px,6.5vw,65px)}.story-note{right:6vw;width:230px}.story-position{right:13px}.story-position button>span{display:none}body.story-mode .viewport{left:10%;min-height:0}.story-section:first-child{align-items:center}}
+@media(max-width:600px){body.story-mode .topbar{margin:0 18px;align-items:flex-start;padding-top:20px;height:110px;gap:10px;flex-wrap:wrap}body.story-mode .identity{font-size:17px}body.story-mode .modes{gap:14px;width:auto;order:0;flex:0 0 auto}body.story-mode .mode{font-size:11px;flex:none}body.story-mode .tour-button{margin-left:auto;font-size:10px;padding:5px 12px}.story-section,.story-section:first-child{min-height:110svh;align-items:flex-start;padding:22vh 7vw 12vh}.story-copy{width:88vw}.story-copy :is(h1,h2){font-size:44px;line-height:1.3}.story-kicker{margin-bottom:14px}.story-note{left:7vw;right:auto;bottom:11vh;width:70vw}.story-note p{font-size:13px;max-width:320px}.story-note>span{font-size:10px;margin-bottom:7px}.story-note button{max-width:290px}.story-position{right:8px}.story-scroll-hint{bottom:13px;font-size:10px}body.story-mode .viewport{left:0;right:-25%;top:16%;bottom:13%;opacity:.8}.story-section:last-of-type{min-height:110svh}}
+@media(prefers-reduced-motion:reduce){.story-note button,.story-position button>span{transition:none}}

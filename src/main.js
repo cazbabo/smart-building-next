@@ -5,6 +5,9 @@ import {createPremiumBuilding} from './building.js';
 import {createSolutionScene} from './solutions.js';
 import {stories,solutionSteps,deepDiveScenes} from './content.js';
 import {createCommandCenter} from './command-center.js';
+import {mountCinematicStory} from './cinematic-story.js';
+import {createSignalSculpture} from './signal-sculpture.js';
+import './cinematic-story.css';
 
 const $=s=>document.querySelector(s);
 const viewport=$('#viewport'), canvas=$('#scene'), experience=$('#experience');
@@ -38,6 +41,7 @@ sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-42,righ
 const fill=new THREE.DirectionalLight(0xabcce9,basic?.16:1.4);fill.position.set(32,28,-25);scene.add(fill);
 if(!basic){const room=new RoomEnvironment(),pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(room,.06).texture;scene.environmentIntensity=.65;room.dispose();pmrem.dispose();}
 const building=createPremiumBuilding();scene.add(building.group);
+const signals=createSignalSculpture(basic);signals.group.visible=false;scene.add(signals.group);
 const solutions=new Map();
 const overviewNodes=[
  {label:'พลังงานสะอาดบนดาดฟ้า',sub:'Solar + Energy',pos:[7,37,-1],chapter:'energy'},
@@ -45,7 +49,7 @@ const overviewNodes=[
  {label:'ทุกการเข้าออก เชื่อมถึงกัน',sub:'Access + Security',pos:[13,4,11],chapter:'security'}
 ];
 const info={
- overview:['ONE Building · สำนักงาน','ออกแบบให้ทุกระบบ ทำงานร่วมกัน','Lobby · 8 ชั้นสำนักงานและห้องประชุม · Rooftop'],
+ overview:['Mockup Building · สำนักงาน','ออกแบบให้ทุกระบบ ทำงานร่วมกัน','Lobby · 8 ชั้นสำนักงานและห้องประชุม · Rooftop'],
  energy:['Rooftop · Energy centre','พลังงานที่มองเห็นได้ ตั้งแต่ต้นทางถึงโหลด','Solar → Inverter → Smart Meter → Demand control'],
  comfort:['ชั้น 6 · ห้องประชุมและสำนักงาน','เปิดให้เห็นเบื้องหลัง อากาศที่พอดี','Sensor → AHU → VAV → Occupied zone'],
  workspace:['ชั้น 8 · Workplace','พื้นที่พร้อม ก่อนผู้ใช้งานมาถึง','Booking → Presence → Lighting + HVAC'],
@@ -62,6 +66,34 @@ let current='overview',detailStage=0,detailOpen=false,explore=false,rotating=fal
 let nodes=[],hotspotElements=[],leaderLines=[],activeScene=null,dirty=true,lastRender=0,elapsed=0,lastTime=0;
 const fromPosition=new THREE.Vector3(),fromTarget=new THREE.Vector3(),toPosition=new THREE.Vector3(),toTarget=new THREE.Vector3();
 let transition=1,viewSpan=54;
+let cinematic=false,storyIndex=-1,storyProgress=0;
+const storyChapters=['overview','overview','comfort','plant','command'];
+const cinematicStory=mountCinematicStory({
+ onProgress(index,progress){
+  storyProgress=progress;
+  if(storyIndex!==index){storyIndex=index;selectChapter(storyChapters[index],false);if(!reduced)viewport.animate([{opacity:.2},{opacity:1}],{duration:650});}
+  applyStoryCamera();dirty=true;
+ },
+ onExit:exitStory,
+ onPlayState(playing){$('#tourButton').innerHTML=playing?'Ⅱ หยุดเรื่องราว':'<span class="play">▶</span> เล่นเรื่องราว <small>2 นาที</small>';}
+});
+function enterStory(){
+ stopTour();cinematic=true;storyIndex=-1;rotating=false;setMode(false);controls.enabled=false;
+ document.body.classList.add('story-mode');history.replaceState(null,'','#story');cinematicStory.start();resize();
+ $('#tourButton').innerHTML='<span class="play">▶</span> เล่นเรื่องราว <small>2 นาที</small>';
+}
+function exitStory(name='overview'){
+ cinematicStory.hide();cinematic=false;signals.group.visible=false;document.body.classList.remove('story-mode');
+ controls.enabled=true;setMode(true);scrollTo({top:0,behavior:'instant'});selectChapter(name);resize();
+}
+function applyStoryCamera(){
+ if(!cinematic)return;transition=1;camera.zoom=1;
+ const p=reduced?.45:storyProgress;
+ if(storyIndex===0){viewSpan=48;camera.position.set(0,4,65);controls.target.set(0,0,0);signals.update(elapsed,p,reduced||basic);}
+ else if(storyIndex===1){viewSpan=53;const a=.63+(p-.45)*.35;camera.position.set(Math.sin(a)*83,41,Math.cos(a)*83);controls.target.set(0,18,0);}
+ else {viewSpan=storyIndex===4?28:29;camera.position.set(storyIndex===4?18:29+p*5,storyIndex===4?18:28-p*6,34);controls.target.set(0,storyIndex===4?2:1,0);}
+ camera.lookAt(controls.target);resizeProjection();
+}
 const command=createCommandCenter($('#commandPanel'),syncOperations,()=>openDetail());
 function syncOperations(snapshot){
  activeScene?.setIncident(snapshot);
@@ -89,6 +121,7 @@ function syncOperations(snapshot){
  dirty=true;
 }
 function moveCamera(focus=false){
+ if(cinematic){applyStoryCamera();resize();return;}
  const overview=current==='overview'&&!detailOpen;
  const target=overview?new THREE.Vector3(0,18,0):new THREE.Vector3(0,current==='command'?2:1,0);
  const position=overview?new THREE.Vector3(52,41,64):new THREE.Vector3(current==='command'?20:27,current==='command'?20:24,32);
@@ -97,13 +130,15 @@ function moveCamera(focus=false){
  if(transition===1){camera.position.copy(position);controls.target.copy(target);}
  resize();dirty=true;
 }
-function resize(){const w=viewport.clientWidth,h=viewport.clientHeight;const aspect=w/h;const span=viewSpan*Math.max(1,(current==='overview'&&!detailOpen?.95:1.45)/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();renderer.setSize(w,h);dirty=true;}
+function resizeProjection(){const w=viewport.clientWidth,h=Math.max(1,viewport.clientHeight);const aspect=w/h;const span=viewSpan*Math.max(1,(current==='overview'&&!detailOpen?.95:1.45)/aspect);camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();}
+function resize(){resizeProjection();renderer.setSize(viewport.clientWidth,viewport.clientHeight);dirty=true;}
 new ResizeObserver(resize).observe(viewport);
 function updateControls(){controls.enableRotate=explore;controls.enableZoom=explore;controls.autoRotate=rotating&&!reduced;$('#rotateView').setAttribute('aria-pressed',String(rotating));$('#rotateView').innerHTML=rotating?'Ⅱ <span>หยุดหมุน</span>':'↻ <span>หมุนอาคาร</span>';}
 function setupScene(){
- building.group.visible=current==='overview'&&!detailOpen;
+ signals.group.visible=cinematic&&storyIndex===0;
+ building.group.visible=current==='overview'&&!detailOpen&&!signals.group.visible;
  solutions.forEach(s=>s.group.visible=false);activeScene=null;
- if(building.group.visible){nodes=overviewNodes;}else{
+ if(signals.group.visible){nodes=[];}else if(building.group.visible){nodes=overviewNodes;}else{
   if(!solutions.has(current)){const result=createSolutionScene(current);solutions.set(current,result);scene.add(result.group);}
   activeScene=solutions.get(current);activeScene.group.visible=true;activeScene.setStage(detailStage);nodes=activeScene.nodes;
  }
@@ -118,7 +153,7 @@ function setupScene(){
  moveCamera(detailOpen);syncOperations(command.store.snapshot);
 }
 function selectChapter(name,manual=true){
- if(manual)stopTour();history.replaceState(null,'',`#${name}`);current=name;detailStage=0;detailOpen=false;experience.classList.remove('detail-open');$('#detailPanel').hidden=true;
+ if(manual)stopTour();history.replaceState(null,'',cinematic?'#story':`#${name}`);current=name;detailStage=0;detailOpen=false;experience.classList.remove('detail-open');$('#detailPanel').hidden=true;
  experience.classList.toggle('command-mode',name==='command');$('#commandPanel').hidden=name!=='command';
  const story=stories[name];
  document.querySelectorAll('.chapter').forEach(b=>{const active=b.dataset.chapter===name;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
@@ -140,16 +175,14 @@ function renderDetail(index){
 }
 function openDetail(index=0){stopTour();detailOpen=true;detailStage=index;experience.classList.add('detail-open');$('#detailPanel').hidden=false;setupScene();renderDetail(index);$('#closeDetail').focus({preventScroll:true});}
 function closeDetail(){detailOpen=false;experience.classList.remove('detail-open');$('#detailPanel').hidden=true;setupScene();(current==='command'?$('#commandDetail'):$('#detailButton')).focus({preventScroll:true});}
-function stopTour(){clearInterval(tourTimer);tourTimer=null;$('#tourButton').innerHTML='<span class="play">▶</span> เริ่มนำเสนอ <small>2 นาที</small>';}
+function stopTour(){clearInterval(tourTimer);tourTimer=null;cinematicStory.stop();$('#tourButton').innerHTML='<span class="play">▶</span> เริ่มนำเสนอ <small>2 นาที</small>';}
 $('#tourButton').addEventListener('click',()=>{
- if(tourTimer){stopTour();return;}setMode(false);selectChapter('overview',false);let index=0;const order=Object.keys(stories);
- $('#tourButton').textContent='Ⅱ หยุดการนำเสนอ';
- tourTimer=setInterval(()=>{index++;if(index>=order.length){stopTour();return;}selectChapter(order[index],false);},18000);
+ if(!cinematic)enterStory();cinematicStory.play();
 });
 function setMode(value){explore=value;experience.classList.toggle('explore',value);document.querySelectorAll('.mode').forEach(b=>{const active=(b.dataset.mode==='explore')===value;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});updateControls();}
-$('.identity').addEventListener('click',e=>{e.preventDefault();selectChapter('overview');});
+$('.identity').addEventListener('click',e=>{e.preventDefault();enterStory();});
 $('.chapters').addEventListener('click',e=>{const b=e.target.closest('[data-chapter]');if(b)selectChapter(b.dataset.chapter);});
-$('.modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b){stopTour();setMode(b.dataset.mode==='explore');}});
+$('.modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b){if(b.dataset.mode==='explore')exitStory(current);else enterStory();}});
 $('#detailButton').addEventListener('click',()=>openDetail());$('#closeDetail').addEventListener('click',closeDetail);
 $('#previousStage').addEventListener('click',()=>renderDetail(detailStage-1));$('#nextStage').addEventListener('click',()=>detailStage===3?closeDetail():renderDetail(detailStage+1));
 $('#detailProgress').addEventListener('click',e=>{const b=e.target.closest('[data-step]');if(b)renderDetail(Number(b.dataset.step));});
@@ -159,6 +192,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&detailOpen)closeDetail();});
 controls.addEventListener('change',()=>dirty=true);
 canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('#renderNotice').textContent='การแสดงผล 3D หยุดชั่วคราว · โหลดหน้าใหม่เพื่อเริ่มอีกครั้ง';$('#renderNotice').hidden=false;});
 function updateLabels(){
+ if(cinematic)return;
  const w=viewport.clientWidth,h=viewport.clientHeight,placed=[];
  nodes.forEach((n,i)=>{const v=new THREE.Vector3(...n.pos).project(camera);const b=hotspotElements[i];const visible=v.z>=-1&&v.z<=1&&Math.abs(v.x)<.94&&Math.abs(v.y)<.89;
   b.hidden=!visible;leaderLines[i].style.display=visible?'':'none';if(!visible)return;
@@ -176,7 +210,7 @@ function animate(time){
  requestAnimationFrame(animate);if(document.hidden){lastTime=time;return;}
  const dt=Math.min((time-lastTime)/1000,.05);lastTime=time;elapsed+=dt;
  if(transition<1){transition=Math.min(1,transition+dt*1.5);const ease=1-(1-transition)**3;camera.position.lerpVectors(fromPosition,toPosition,ease);controls.target.lerpVectors(fromTarget,toTarget,ease);dirty=true;}
- controls.update(dt);
+ if(cinematic){applyStoryCamera();if(!basic&&signals.group.visible)signals.update(elapsed,storyProgress,reduced);}else controls.update(dt);
  if(!basic||(time-lastRender>100&&(dirty||rotating))){
   activeScene?.animate(elapsed,reduced||basic);renderer.render(scene,camera);
   if(basic)renderer.domElement.style.backgroundColor='transparent';
@@ -185,5 +219,6 @@ function animate(time){
  }
 }
 const initialChapter=location.hash.slice(1);
-selectChapter(Object.hasOwn(stories,initialChapter)?initialChapter:'overview');updateControls();requestAnimationFrame(animate);
-addEventListener('hashchange',()=>{const name=location.hash.slice(1);if(Object.hasOwn(stories,name)&&name!==current)selectChapter(name);});
+if(Object.hasOwn(stories,initialChapter)){selectChapter(initialChapter);setMode(true);}else enterStory();
+updateControls();requestAnimationFrame(animate);
+addEventListener('hashchange',()=>{const name=location.hash.slice(1);if(name==='story')enterStory();else if(Object.hasOwn(stories,name)&&(name!==current||cinematic))exitStory(name);});
