@@ -63,3 +63,12 @@ export const deepDiveScenes = {
   ]
 };
 
+// Central operations room shares one incident state with its video wall and KPIs.
+stories.command={number:'08',label:'COMMAND CENTER',headline:'ทุกระบบ<br><em>อยู่ในสายตา</em>',description:'รวมสถานะอาคาร เหตุการณ์ และการตอบสนองในห้องควบคุมเดียว เลือกเหตุเพื่อดูผลกระทบและติดตามงานของทีม',impact:'เห็นเหตุ ตัดสินใจ และติดตามจนจบ',status:'OPERATIONS CONNECTED',readings:[['CONNECTED SYSTEMS','6','systems'],['OPEN INCIDENTS','3','events'],['RESOLVED','0','events']]};
+solutionSteps.command=[['OBSERVE','รวมสถานะจากทุกระบบ'],['RESPOND','เชื่อมเหตุและมอบหมายงาน'],['VERIFY','ติดตามผลจนปิดเหตุการณ์']];
+deepDiveScenes.command=[
+ {title:'มองเห็นอาคารในห้องเดียว',description:'Video Wall รวม Energy, Comfort, Workspace, Security, Parking และ Plant โดยผูกทุกสถานะกับชั้นและอุปกรณ์ต้นทาง',data:[['SYSTEMS','6',''],['OPERATIONS','24/7',''],['DATA','DEMO','']],logic:'อุปกรณ์แต่ละจุดใช้รหัสพื้นที่และประเภทระบบเดียวกัน เพื่อเชื่อมค่าที่อ่านกับตำแหน่งในอาคาร',result:'ทีมปฏิบัติการเห็นสถานการณ์ร่วมกัน'},
+ {title:'รับเหตุพร้อมบริบท',description:'เมื่อมีเหตุ ระบบแสดงอุปกรณ์ พื้นที่ที่ได้รับผลกระทบ และค่าที่ผิดปกติ พร้อมเน้นระบบนั้นบน Video Wall',data:[['SOURCE','DEVICE',''],['CONTEXT','ZONE',''],['PRIORITY','RULE','']],logic:'รวมเหตุที่เกี่ยวข้องเป็นงานเดียวและจัดลำดับตามผลกระทบต่อผู้ใช้อาคาร',result:'ตรวจเหตุจากบริบท ไม่ต้องสลับค้นหลายระบบ'},
+ {title:'มอบหมายและตอบสนอง',description:'เจ้าหน้าที่รับเหตุและส่งงานให้ทีมที่เกี่ยวข้อง พร้อมเห็นสถานะเปลี่ยนจากรอรับงานเป็นกำลังดำเนินการ',data:[['OWNER','TEAM',''],['STATUS','ACTIVE',''],['ACTION','TRACKED','']],logic:'งานถูกผูกกับทีมรับผิดชอบ การดำเนินการจริงต้องผ่านสิทธิ์และนโยบายที่องค์กรกำหนด',result:'ทุกเหตุมีผู้รับผิดชอบและขั้นตอนถัดไปชัดเจน'},
+ {title:'ยืนยันผลและปิดเหตุ',description:'ในเดโม ปุ่มจำลองแก้ไขจะคืนค่าอุปกรณ์สู่ปกติ พร้อมอัปเดต Video Wall จำนวนเหตุ และประวัติงานในครั้งเดียว',data:[['VERIFY','NORMAL',''],['EVENT','CLOSED',''],['HISTORY','RECORDED','']],logic:'ในระบบจริงควรยืนยันด้วยค่าที่อ่านกลับจากอุปกรณ์ ก่อนอนุญาตให้ปิดงาน',result:'สถานะทุกส่วนตรงกัน และตรวจสอบการดำเนินการย้อนหลังได้'}
+];
