@@ -15,11 +15,11 @@ Eight chapters: Living City → Fragmentation → Connected Platform → Data Fo
 - Three.js procedural city, orthographic camera, fixed diagonal orientation.
 - Modular procedural geometry, with segmented curtain walls and separately dimmable districts.
 - Deterministic scene and mock data from normalized scroll; reverse scrolling restores state.
-- Camera pan/zoom interpolates over the opening portion of each chapter or use case.
+- Camera pan/zoom interpolates over 55% of each chapter/use-case segment, with a short settling filter; reduced motion uses static camera presets. Canvas size only changes when the viewport changes.
 - Manual rotation limited to ±12° horizontally and ±5° vertically. Further scrolling or Return to story restores the guided camera.
 - Accessible HTML controls separate from canvas. Keyboard chapter navigation, native modal focus handling, reduced motion, fullscreen, loading progress.
 - Scene module lazy-loaded. Narrow screens skip all Three.js assets and show the full textual story. WebGL failure uses a lightweight vector-rendered 3D view; fatal scene errors show the textual story.
-- Render on state changes, suspend drawing in hidden tabs, cap device pixel ratio at 2 and reduce resolution/shadows if frame rendering is costly.
+- Render on state changes, suspend drawing in hidden tabs, cap device pixel ratio at 2 and preserve resolution and shadows through camera movement.
 - No real AI, live connections, device controls, customer branding, authentication or dashboard backend.
 
 ## Review notes
@@ -27,3 +27,7 @@ Eight chapters: Living City → Fragmentation → Connected Platform → Data Fo
 The city is procedural web geometry rather than a supplied GLB asset collection. Mobile uses a lightweight rendered city poster and the full chapter text. Review/Approve are disabled demonstration controls. Numerical performance on the user's GPU must be assessed on their device; the cloud visual browser may use the lightweight renderer.
 
 Existing Smart Building pages remain separately accessible. Unpublished earlier `/smart-city` draft files are not part of this page's build or deployment.
+
+## Readability refinement
+
+Use-case copy follows What happens → What you see → What the team does. Technical data-source explanations remain in detail dialogs. Facades use deeper blue-green glass, bronze fins, recessed entrances, entrance canopies and open roof terraces. Unselected districts retain most material contrast. No automatic one-frame quality downgrade.

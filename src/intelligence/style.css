@@ -10,3 +10,9 @@
 .map-tags{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}.map-tag{position:absolute;left:0;top:0;font-size:10px;line-height:1.4;white-space:nowrap;background:#fffffff2;color:#654471;border:1px solid #e7d9ed;border-radius:5px;padding:6px 9px;box-shadow:0 4px 13px #52205e08;margin-left:-40px;margin-top:-19px}.map-tag:before{content:"";width:5px;height:5px;background:#9ec934;display:inline-block;margin-right:6px;border-radius:50%}
 
 .city-poster{display:block;width:100%;height:auto;margin:0 0 25px;mix-blend-mode:multiply}
+
+/* Keep the architectural silhouette crisp; motion belongs to the camera. */
+.scene-ground{background:radial-gradient(ellipse,#dcdbe3 0,transparent 68%)}#story-title,#story-copy{transition:opacity .18s ease}.story-note{color:#74647d}#context{right:2.8%}.scene-caption{color:#65566f}
+
+.explain-steps{list-style:none;padding:0;margin:13px 0}.explain-steps li{display:flex;gap:11px;padding:10px 0;border-top:1px solid #ebe4ef;color:#6a5c73}.explain-steps li>span{width:22px;height:22px;flex:0 0 22px;display:grid;place-items:center;border-radius:50%;background:#eee7f1;font-size:11px;color:#745580}.explain-steps b{font-size:12px;font-weight:600;color:#594263}.explain-steps p{margin:5px 0 0;font-size:13px;line-height:1.5}.explain-steps .active>span{background:#c7ff3d;color:#3d2047}.explain-steps .active b{color:#52205e}#story-copy{color:#62526c;font-size:17px;line-height:1.65}body[data-chapter="5"] h1{font-size:clamp(34px,3.2vw,58px)}body[data-chapter="5"] #context{width:305px}.metric strong{font-size:36px}.metric>span{font-size:13px}.detail-link{font-size:13px}.operation-card .spark{height:31px}.card-label{color:#755582}.scene-controls>span{color:#6f6179}
+@media(max-height:800px) and (min-width:701px){#story-copy{font-size:15px}.explain-steps p{font-size:11px}.explain-steps li{padding:8px 0}body[data-chapter="5"] #context{width:280px}}

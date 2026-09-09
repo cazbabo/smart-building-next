@@ -3,13 +3,13 @@ const cube=new T.BoxGeometry(1,1,1);
 const M=(c,extra={})=>new T.MeshStandardMaterial({color:c,roughness:.55,...extra});
 export function createCity(){
  const root=new T.Group(),buildings=new T.Group(),layers=new T.Group();root.add(buildings,layers);
- const colors={ivory:M('#f7f5f6'),stone:M('#ddd8df'),glass:M('#9eafbe',{metalness:.45,roughness:.2}),dark:M('#665e70'),bronze:M('#b7a5a2',{metalness:.5}),road:M('#d5d0db'),line:M('#ffffff'),green:M('#9eb385'),leaf:M('#b4c896'),lime:M('#c7ff3d'),orchid:M('#c044d9'),water:M('#a9cbd9',{metalness:.35,roughness:.18}),plum:M('#52205e'),warning:M('#f2b84b')};
+ const colors={ivory:M('#f7f5f6'),stone:M('#ddd8df'),glass:M('#517786',{metalness:.32,roughness:.27}),dark:M('#665e70'),bronze:M('#aa8a68',{metalness:.35,roughness:.45}),road:M('#bfc2c8'),line:M('#ffffff'),green:M('#92ac7e'),leaf:M('#88a56a'),lime:M('#c7ff3d'),orchid:M('#c044d9'),water:M('#a9cbd9',{metalness:.35,roughness:.18}),plum:M('#52205e'),warning:M('#f2b84b')};
  const assets={},originals=[],sensors=[],paths=[],silos=[],energyBars=[],tiles=[];
  function box(g,w,h,d,x,y,z,m=colors.ivory){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cyl(g,r,h,x,y,z,m,segments=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,segments),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function asset(id,x,z){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;buildings.add(g);if(!assets[id])assets[id]=g;return g;}
  function tile(g,w,d,x,z){let a=box(g,w,.65,d,x,.05,z,colors.ivory);a.renderOrder=-8;tiles.push(a);box(g,w-.35,.1,d-.35,x,.42,z,colors.stone).renderOrder=-7;}
- function tree(g,x,z,scale=1){cyl(g,.09,1.5,x,1.25,z,colors.bronze,5);let a=new T.Mesh(new T.SphereGeometry(.85,8,6),colors.leaf);a.position.set(x,2.3,z);a.scale.set(scale,1.3*scale,scale);a.castShadow=true;g.add(a);}
+ function tree(g,x,z,scale=1){cyl(g,.09,1.5,x,1.25,z,colors.bronze,5);let a=new T.Mesh(new T.SphereGeometry(.85,16,12),colors.leaf);a.position.set(x,2.3,z);a.scale.set(scale,1.3*scale,scale);a.castShadow=true;g.add(a);}
  function grove(g,x,z,n,axis='x'){for(let i=0;i<n;i++)tree(g,x+(axis==='x'?i*2.3:0),z+(axis==='z'?i*2.3:0),.8+(i%3)*.1);}
  function roofGarden(g,w,d,y){box(g,w,.18,d,0,y,0,colors.green);for(let i=0;i<3;i++){box(g,w/4,.4,1.2,-w/3+i*w/3,y+.25,-d/3,colors.stone);let a=new T.Mesh(new T.SphereGeometry(.6,8,5),colors.leaf);a.scale.x=2;a.position.set(-w/3+i*w/3,y+.65,-d/3);g.add(a);}}
  function tower(g,x,z,w,d,floors,variant=0){const t=new T.Group();t.position.set(x,.5,z);g.add(t);const h=floors*2.5;
@@ -21,7 +21,14 @@ export function createCity(){
   box(t,w*.36,1.5,d*.32,w*.12,h+2,0,colors.stone);
   // Thin roof canopy and open columns produce an architectural crown.
   for(const dx of [-w*.38,w*.38])for(const dz of [-d*.36,d*.36])box(t,.16,1.9,.16,dx,h+2.2,dz,colors.bronze);
-  box(t,w+.7,.18,d+.7,0,h+3.15,0,colors.ivory);
+  box(t,w+.7,.22,d*.42,0,h+3.15,-d*.26,colors.ivory);
+  // Recessed arrival lobby, entrance canopy and a planted terrace.
+  box(t,w*.7,.16,2.1,0,2.45,d/2+.65,colors.ivory);
+  for(const dx of [-w*.29,w*.29])box(t,.13,2.1,.13,dx,1.22,d/2+1.25,colors.bronze);
+  box(t,1.8,1.9,.1,0,1.38,d/2+.04,colors.dark);
+  box(t,.055,1.9,.12,0,1.38,d/2+.11,colors.bronze);
+  for(let i=0;i<2;i++)box(t,w*.74,.14,1.1+i*.5,0,.25-i*.13,d/2+1,colors.stone);
+  if(variant===1){for(let f=1;f<floors;f++){box(t,w+.65,.09,.65,0,.86+f*2.5,d/2+.1,colors.bronze);}}
   return t;
  }
  // Chamfered presentation plinth, waterway and a connected street grid.
@@ -81,14 +88,16 @@ export function createCity(){
  const incident=new T.Mesh(new T.OctahedronGeometry(.8),colors.warning.clone());layers.add(incident);
  const rain=new T.Group();layers.add(rain);const rainMaterial=new T.LineBasicMaterial({color:'#a9b9d0',transparent:true,opacity:.5});
  for(let i=0;i<38;i++){const x=20+(i*7%17),z=-5+(i*11%23),y=7+(i%7);const geo=new T.BufferGeometry().setFromPoints([new T.Vector3(x,y,z),new T.Vector3(x-.15,y-1.4,z)]);rain.add(new T.Line(geo,rainMaterial));}
+ const transient=[...silos,...paths,platform,flood,prediction,route,air,warning,history,trafficLayer,incident,rain,...energyBars];
+ const fadeMaterials=[];transient.forEach(g=>g.traverse(o=>{if(o.material){o.material=o.material.clone();o.userData.baseOpacity=o.material.opacity;fadeMaterials.push(o);}}));
  const materialGroups=[];
  buildings.children.forEach(g=>{const cache=new Map();g.traverse(o=>{if(o.isMesh){const old=o.material;if(!cache.has(old)){const m=old.clone();cache.set(old,m);materialGroups.push({material:m,base:old.color.clone(),asset:g.userData.asset});}o.material=cache.get(old);}});});
  function update(s){
   const shouldFocus=[3,4,5,6].includes(s.index);
-  materialGroups.forEach(({material,base,asset})=>material.color.copy(base).lerp(new T.Color('#f4f0f6'),shouldFocus && asset!==s.focus ? .6 : 0));
+  materialGroups.forEach(({material,base,asset})=>material.color.copy(base).lerp(new T.Color('#f4f0f6'),shouldFocus && asset!==s.focus ? .12 : 0));
   waterSurface.position.y=-.04+s.flood*.38;
   rain.visible=s.flood>.12;
-  trafficLayer.visible=s.index===5&&s.useIndex===1;trafficMaterial.color.set(s.traffic==='High'?'#e05262':s.traffic==='Medium'?'#f2b84b':'#a8e629');
+  trafficLayer.visible=s.index===5&&s.useIndex===1;trafficLayer.children.forEach(o=>o.material.color.set(s.traffic==='High'?'#e05262':s.traffic==='Medium'?'#f2b84b':'#a8e629'));
   incident.visible=s.index===5&&[1,4].includes(s.useIndex);
   incident.position.set(...(s.useIndex===4?[0,7,3]:[14,4,-7]));incident.material.color.set(s.incident==='Resolved'?'#a8e629':'#f2b84b');
 
@@ -102,6 +111,7 @@ export function createCity(){
   route.visible=(s.index===5&&[0,1].includes(s.useIndex)&&s.u>.4)||(s.index===6&&s.local>.6);
   air.visible=s.index===5&&s.useIndex===2;energyBars.forEach((b,i)=>{b.visible=s.index===5&&s.useIndex===3||s.index===6&&s.local>.8;b.scale.y=3+(i===0?(s.energy-420)/16:2);b.material.color.set(i===0?'#c044d9':'#c7ff3d');});
   history.visible=s.index===3;history.position.y= .9 + (s.local>.55?Math.sin(s.local*7)*.15:0);
+  const phase=s.index===5?s.u:s.local;const edge=Math.min(1,phase/.13,(1-phase)/.10);fadeMaterials.forEach(o=>{o.material.transparent=edge<1||o.userData.baseOpacity<1;o.material.opacity=o.userData.baseOpacity*Math.max(0,edge);});
   originals.forEach(({g,x,z},i)=>{g.position.x=x+Math.sin(s.p*17+i)*1.8;g.position.z=z;});
  }
  root.updateMatrixWorld(true);return {root,assets,locations,update};
