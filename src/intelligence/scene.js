@@ -16,7 +16,7 @@ export async function mountScene(host,{select,manual,ready}){
  const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.enablePan=false;controls.enableZoom=false;controls.minAzimuthAngle=angle-12*Math.PI/180;controls.maxAzimuthAngle=angle+12*Math.PI/180;controls.minPolarAngle=polar-5*Math.PI/180;controls.maxPolarAngle=polar+5*Math.PI/180;
  let state=null,span=112,frame=0,isManual=false,dirty=true,point=new T.Vector3(0,6,0),last=0,low=false;
  let desiredPoint=new T.Vector3(0,10,0),desiredSpan=136,settleImmediately=true;const direction=new T.Vector3(Math.sin(polar)*Math.sin(angle),Math.cos(polar),Math.sin(polar)*Math.cos(angle));
- const targets={all:[0,10,0],hub:[0,8,3],office:[-10,13,-12],water:[13,8,4],traffic:[3,8,-3],park:[0,7,13],residence:[-29,7,8]};
+ const targets={all:[0,10,0],hub:[0,8,3],office:[-20,15,-14],water:[27,8,8],traffic:[3,8,-3],park:[0,7,13],residence:[-29,7,8]};
  let viewWidth=0,viewHeight=0;function resize(){const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;if(w!==viewWidth||h!==viewHeight){renderer.setSize(w,h);viewWidth=w;viewHeight=h;}camera.left=-span/2;camera.right=span/2;camera.top=span/2*h/w;camera.bottom=-span/2*h/w;camera.updateProjectionMatrix();dirty=true;}
  function canonical(focus,nextSpan,previous=null,t=1){desiredPoint.fromArray(targets[focus]||targets.all);if(previous)desiredPoint.lerpVectors(new T.Vector3(...(targets[previous]||targets.all)),desiredPoint,t);desiredSpan=nextSpan;isManual=false;dirty=true;}
  function applyCamera(alpha=1){point.lerp(desiredPoint,alpha);span+=(desiredSpan-span)*alpha;controls.target.copy(point);camera.position.copy(point).addScaledVector(direction,145);camera.lookAt(point);camera.zoom=1;resize();controls.update();}
