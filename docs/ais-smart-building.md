@@ -36,3 +36,11 @@ The first-load architectural reveal is intentionally shortened to 1.8 seconds an
 - The verification browser has no WebGL: model composition and interactions can be reviewed in SVG compatibility mode; physically based reflections, WebGL shadows, and GPU performance remain unverified on a normal GPU browser.
 
 - All five floors and rooftop navigation were checked; floor-specific insights now follow manual selection too. Rooftop and Executive floor show their own contextual data instead of a stale previous scenario.
+
+## Modernist architectural revision
+
+The exterior now uses a recessed lobby, deep entrance canopy, dark broad glass bays, bronze vertical sun fins, mineral piers, a planted sky terrace, and a floating L-shaped roof crown. A reflecting pool, paving and planted arrival islands anchor the building. Facade geometry is owned by individual floors so assembly/explosion and cutaway access remain intact. Solar and inverter IDs and all operational floor/device mappings are retained. The default viewpoint is lower to emphasize the facade and roof silhouette.
+
+The envelope is isolated in `src/ais/modern-envelope.js`. Geometry validation: 457 meshes, 10,192 triangles, finite transforms. Production build passes.
+
+The AIS experience is now English throughout: navigation, headings, device descriptions, AI explanations, action results, accessibility labels, and presenter guidance. The document language is `en`; timestamps use `en-GB`. Demo storage uses a new English-specific key to prevent older Thai result messages appearing after the upgrade. A source scan found no Thai text in the AIS entry or its modules.

@@ -3,6 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {box,cylinder,tree,desk,pipe,mat,palette} from '../model-kit.js';
 import {floors} from './data.js';
+import {createModernEnvelope} from './modern-envelope.js';
 
 export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -10,9 +11,9 @@ export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
  const context=canvas.getContext('webgl2',{antialias:true,alpha:true});
  if(context){renderer=new THREE.WebGLRenderer({canvas,context,antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;}
  else {basic=true;const {SVGRenderer}=await import('three/addons/renderers/SVGRenderer.js');renderer=new SVGRenderer();renderer.setQuality('low');renderer.setPrecision(2);}
- host.prepend(renderer.domElement);renderer.domElement.classList.add('twin-renderer');renderer.domElement.setAttribute('aria-label','โมเดลอาคาร 5 ชั้น หมุน ซูม และเลือกชั้นได้');
+ host.prepend(renderer.domElement);renderer.domElement.classList.add('twin-renderer');renderer.domElement.setAttribute('aria-label','Interactive five-storey building. Orbit, zoom and select floors.');
  const scene=new THREE.Scene(),camera=new THREE.OrthographicCamera(-28,28,22,-22,.1,250);
- const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=!basic;controls.enablePan=false;controls.minZoom=.65;controls.maxZoom=2.4;controls.minPolarAngle=.22;controls.maxPolarAngle=1.46;controls.target.set(0,10,0);camera.position.set(42,33,48);
+ const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=!basic;controls.enablePan=false;controls.minZoom=.65;controls.maxZoom=2.4;controls.minPolarAngle=.22;controls.maxPolarAngle=1.46;controls.target.set(0,10,0);camera.position.set(38,28,52);
  scene.add(new THREE.AmbientLight(0xffffff,basic?.45:1));scene.add(new THREE.HemisphereLight(0xe2f6ff,0x6b7d68,basic?.2:1.4));
  const sun=new THREE.DirectionalLight(0xfff0db,basic?.7:3);sun.position.set(-25,45,30);sun.castShadow=!basic;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-35,right:35,top:40,bottom:-30,near:.5,far:140});sun.shadow.normalBias=.05;scene.add(sun);
  if(!basic){const pmrem=new THREE.PMREMGenerator(renderer),env=new RoomEnvironment();scene.environment=pmrem.fromScene(env,.04).texture;scene.environmentIntensity=.65;pmrem.dispose();env.dispose();}
@@ -20,11 +21,8 @@ export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
  const warningMaterial=mat(0xd4a052),alertMaterial=mat(0xd77956);
  const root=new THREE.Group();root.name='BUILDING';scene.add(root);
  const site=new THREE.Group();root.add(site);
- box(site,[35,.45,29],[0,-.65,0],mat(0xc8d3ce));box(site,[29,.22,24],[0,-.3,0],rim);
- for(const x of [-15,15])for(const z of [-10,-4,4,10]){box(site,[2.3,.35,2.3],[x,-.12,z],silver);tree(site,x,.1,z,1.2);}
- box(site,[16,.04,4],[0,-.15,12],mat(0xd1d8d3));for(let i=-7;i<8;i+=2)box(site,[1.2,.04,1.8],[i,-.1,12],rim);
- box(site,[6,.2,3],[4,.1,10.2],silver);box(site,[6,.05,2.8],[4,.23,10.2],leaf);
- const shadow=cylinder(site,19,.015,[0,-.9,0],mat(0xb9c8c4),48);shadow.scale.z=.8;shadow.renderOrder=-100;
+ const envelope=createModernEnvelope();
+ envelope.landscape(site);
  const levels=[],deviceObjects=new Map(),selectables=[];
  function device(parent,id,pos,type){const g=new THREE.Group();g.position.set(...pos);g.name=id;g.userData.device=id;parent.add(g);deviceObjects.set(id,g);selectables.push(g);
   if(type==='ahu'){box(g,[4,1.8,2.7],[0,.9,0],silver);box(g,[.07,1.2,2],[-2.04,1,0],palette.dark);for(const z of [-.55,.55]){const fan=cylinder(g,.44,.12,[-2.1,1,z],frame,12);fan.rotation.z=Math.PI/2;}box(g,[.7,.8,.12],[.8,1,1.4],palette.dark);box(g,[.48,.45,.05],[.8,1.06,1.49],lime);pipe(g,[[2,1,0],[3,1,0],[3,.3,3]],0x66bbcd,.13);}
@@ -39,18 +37,9 @@ export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
  floors.forEach(f=>{
   const level=new THREE.Group();level.name=`FLOOR_${String(f.id).padStart(2,'0')}`;level.userData.floor=f.id;level.position.y=(f.id-1)*4.3;root.add(level);
   const shell=new THREE.Group(),interior=new THREE.Group();level.add(shell,interior);interior.visible=false;
-  const slab=box(level,[24,.28,18],[0,.02,0],silver);slab.userData.floor=f.id;selectables.push(slab);
-  box(shell,[24.4,.14,18.4],[0,.19,0],rim);
+  const slab=box(level,[24,.28,18],[0,.02,0],envelope.slabMaterial);slab.userData.floor=f.id;selectables.push(slab);
   if(f.id<6){
-   box(shell,[23.4,3.8,.14],[0,2.15,8.83],glass);box(shell,[.14,3.8,17.5],[11.8,2.15,0],glass);box(shell,[23.4,3.8,.14],[0,2.15,-8.83],glass);box(shell,[.14,3.8,17.5],[-11.8,2.15,0],glass);
-   for(let x=-11.8;x<12;x+=2){box(shell,[.075,4,.18],[x,2.2,8.94],frame);box(shell,[.075,4,.18],[x,2.2,-8.94],frame);}
-   for(let z=-8.8;z<9;z+=2){box(shell,[.18,4,.075],[11.91,2.2,z],frame);box(shell,[.18,4,.075],[-11.91,2.2,z],frame);}
-   box(shell,[24,.1,.1],[0,2.2,8.99],frame);box(shell,[.1,.1,18],[12,2.2,0],frame);
-   for(let x=-10;x<11;x+=4){box(shell,[2.9,.11,.03],[x,3.5,8.96],rim);}
-   // Terraces and planted vertical ribbon make the generic tower identifiable.
-   box(shell,[3.6,.4,3.2],[9.6,.45,7],silver);box(shell,[3.4,.35,2.9],[9.6,.8,7],leaf);
-   for(let z=-7;z<=7;z+=3)box(shell,[.32,3.8,.65],[-12.15,2.1,z],leaf);
-   if(f.id===1){box(shell,[9,.17,4],[0,3.8,10],rim);for(const x of [-4,4])box(shell,[.15,3.5,.15],[x,1.8,11.5],frame);box(shell,[4,2.8,.25],[0,1.5,9],palette.dark);}
+   envelope.facade(shell,f.id);
    box(interior,[24,.12,18],[0,.23,0],rim).renderOrder=-20;
    box(interior,[24,2.4,.14],[0,1.4,-9],silver).renderOrder=-10;box(interior,[.14,2.4,18],[-12,1.4,0],silver).renderOrder=-10;
    // Clearly separated office and meeting zones; open front is the cutaway.
@@ -65,16 +54,16 @@ export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
    const positions=f.id===1?[[7,.3,3.8],[10,.3,-6]]:f.id===5?[[0,.3,1],[7,.3,-3]]:[[6,.3,1],[-7,.3,-7]];
    f.devices.forEach((id,i)=>device(interior,id,positions[i],types[f.id][i]));
   } else {
-   for(const z of [-8.7,8.7])box(shell,[24,.55,.18],[0,.65,z],silver);for(const x of [-11.8,11.8])box(shell,[.18,.55,18],[x,.65,0],silver);
-   device(level,'SOLAR_ARRAY',[-3,.35,0],'solar');device(level,'SOLAR_INVERTER',[8,.35,-3],'meter');box(shell,[3,.4,14],[10,.5,0],leaf);for(const z of [-6,0,6])tree(shell,10,.7,z,.7);
+   envelope.rooftop(shell);
+   device(level,'SOLAR_ARRAY',[-3,.9,0],'solar');device(level,'SOLAR_INVERTER',[7.5,.35,-2],'meter');
   }
   levels.push({group:level,shell,interior,base:(f.id-1)*4.3,target:(f.id-1)*4.3});
  });
  const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let mode='building',floor=0,dirty=true,transition=true,selected=null,span=43,last=0,hoverFloor=0;
- const cameraGoal=new THREE.Vector3(42,33,48),targetGoal=new THREE.Vector3(0,10,0);
+ const cameraGoal=new THREE.Vector3(38,28,52),targetGoal=new THREE.Vector3(0,10,0);
  function resize(){const {width,height}=host.getBoundingClientRect();if(!width||!height)return;renderer.setSize(width,height);const aspect=width/height;camera.left=-span*aspect/2;camera.right=span*aspect/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();dirty=true;}
  new ResizeObserver(resize).observe(host);controls.addEventListener('change',()=>{dirty=true;});controls.addEventListener('start',()=>{transition=false;});
- function setMode(next,id=0){mode=next;floor=id;site.visible=next==='building';levels.forEach((l,i)=>{l.group.visible=next!=='floor'||i+1===id;l.target=next==='explode'?i*7.8:next==='floor'?0:l.base;l.shell.visible=next!=='floor'||i===5;l.interior.visible=next==='floor';});span=next==='building'?43:next==='explode'?64:29;camera.zoom=1;cameraGoal.set(next==='floor'?27:42,next==='floor'?25:next==='explode'?42:33,next==='floor'?34:48);targetGoal.set(0,next==='building'?10:next==='explode'?19:1,0);transition=true;resize();}
+ function setMode(next,id=0){mode=next;floor=id;site.visible=next==='building';levels.forEach((l,i)=>{l.group.visible=next!=='floor'||i+1===id;l.target=next==='explode'?i*7.8:next==='floor'?0:l.base;l.shell.visible=next!=='floor'||i===5;l.interior.visible=next==='floor';});span=next==='building'?43:next==='explode'?64:29;camera.zoom=1;cameraGoal.set(next==='floor'?27:38,next==='floor'?25:next==='explode'?42:28,next==='floor'?34:52);targetGoal.set(0,next==='building'?10:next==='explode'?19:1,0);transition=true;resize();}
  function selectDevice(id){selected=id;deviceObjects.forEach((g,key)=>{g.getObjectByName('selection-ring').visible=key===id;});dirty=true;}
  function pick(event){const rect=renderer.domElement.getBoundingClientRect();pointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(root.children,true);for(const hit of hits){let p=hit.object,visible=true;while(p){if(!p.visible)visible=false;p=p.parent;}if(!visible)continue;p=hit.object;let f=0,d;while(p){if(p.userData.device)d=p.userData.device;if(p.userData.floor)f=p.userData.floor;p=p.parent;}if(f)return {floor:f,device:d};}return null;}
  let startPoint;renderer.domElement.addEventListener('pointerdown',e=>{startPoint=[e.clientX,e.clientY];});renderer.domElement.addEventListener('pointerup',e=>{if(!startPoint||Math.hypot(e.clientX-startPoint[0],e.clientY-startPoint[1])>6)return;const hit=pick(e);if(hit?.device&&mode==='floor')onDevice(hit.device);else if(hit?.floor)onFloor(hit.floor);});
