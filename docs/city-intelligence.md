@@ -13,7 +13,7 @@ Eight chapters: Living City → Fragmentation → Connected Platform → Data Fo
 ## Implementation
 
 - Three.js procedural city, orthographic camera, fixed diagonal orientation.
-- 773 meshes, approximately 19,160 triangles before any later refinements.
+- Modular procedural geometry, with segmented curtain walls and separately dimmable districts.
 - Deterministic scene and mock data from normalized scroll; reverse scrolling restores state.
 - Camera pan/zoom interpolates over the opening portion of each chapter or use case.
 - Manual rotation limited to ±12° horizontally and ±5° vertically. Further scrolling or Return to story restores the guided camera.
@@ -24,6 +24,6 @@ Eight chapters: Living City → Fragmentation → Connected Platform → Data Fo
 
 ## Review notes
 
-The city is procedural web geometry rather than a supplied GLB asset collection. Mobile currently uses a text summary, not a rendered poster collection. Review/Approve are disabled demonstration controls. Numerical performance on the user's GPU must be assessed on their device; the cloud visual browser may use the lightweight renderer.
+The city is procedural web geometry rather than a supplied GLB asset collection. Mobile uses a lightweight rendered city poster and the full chapter text. Review/Approve are disabled demonstration controls. Numerical performance on the user's GPU must be assessed on their device; the cloud visual browser may use the lightweight renderer.
 
 Existing Smart Building pages remain separately accessible. Unpublished earlier `/smart-city` draft files are not part of this page's build or deployment.

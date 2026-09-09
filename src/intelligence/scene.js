@@ -9,7 +9,7 @@ export async function mountScene(host,{select,manual,ready}){
  scene.add(new T.HemisphereLight(0xffffff,0x9c8fa5,2.5));const sun=new T.DirectionalLight(0xfff8f1,3.4);sun.position.set(-40,85,45);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-70,right:70,top:70,bottom:-70,near:1,far:180});sun.shadow.bias=-.0003;sun.shadow.normalBias=.1;sun.shadow.radius=3;scene.add(sun);
  let renderer,webgl=true,pmrem;
  try{renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;pmrem=new T.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),.08).texture;pmrem.dispose();}
- catch{webgl=false;renderer=new SVGRenderer();renderer.setQuality('low');sun.intensity=.65;scene.add(new T.AmbientLight(0xffffff,.78));}
+ catch{webgl=false;renderer=new SVGRenderer();renderer.setQuality('low');sun.intensity=.65;scene.add(new T.AmbientLight(0xaaaaaa,1));}
  renderer.setClearColor(0xfaf8fc,0);host.appendChild(renderer.domElement);
  renderer.domElement.setAttribute('aria-label','Interactive isometric city. Use the location buttons to inspect solutions.');
  const camera=new T.OrthographicCamera(-60,60,50,-50,.1,400);const angle=Math.PI/4,polar=55*Math.PI/180;

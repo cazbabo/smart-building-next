@@ -13,10 +13,10 @@ export function createCity(){
  function grove(g,x,z,n,axis='x'){for(let i=0;i<n;i++)tree(g,x+(axis==='x'?i*2.3:0),z+(axis==='z'?i*2.3:0),.8+(i%3)*.1);}
  function roofGarden(g,w,d,y){box(g,w,.18,d,0,y,0,colors.green);for(let i=0;i<3;i++){box(g,w/4,.4,1.2,-w/3+i*w/3,y+.25,-d/3,colors.stone);let a=new T.Mesh(new T.SphereGeometry(.6,8,5),colors.leaf);a.scale.x=2;a.position.set(-w/3+i*w/3,y+.65,-d/3);g.add(a);}}
  function tower(g,x,z,w,d,floors,variant=0){const t=new T.Group();t.position.set(x,.5,z);g.add(t);const h=floors*2.5;
-  box(t,w+1.4,.6,d+1.4,0,.3,0,colors.ivory);box(t,w-.4,h,d-.4,0,h/2+.6,0,colors.glass);
+  box(t,w+1.4,.6,d+1.4,0,.3,0,colors.ivory);for(let f=0;f<floors;f++)box(t,w-.4,2.28,d-.4,0,1.95+f*2.5,0,colors.glass);
   for(let f=0;f<=floors;f++)box(t,w+.3,.20,d+.3,0,.8+f*2.5,0,colors.ivory);
-  for(let j=-w/2;j<=w/2+.01;j+=w/5){box(t,.14,h,d+.6,j,h/2+.7,0,variant===1?colors.bronze:colors.ivory);}
-  for(let k=-d/2;k<=d/2+.01;k+=d/4){box(t,w+.45,h,.12,0,h/2+.7,k,variant===1?colors.bronze:colors.ivory);}
+  for(let j=-w/2;j<=w/2+.01;j+=w/5){for(const dz of [-d/2,d/2])box(t,.14,h,.28,j,h/2+.7,dz,variant===1?colors.bronze:colors.ivory);}
+  for(let k=-d/2;k<=d/2+.01;k+=d/4){for(const dx of [-w/2,w/2])box(t,.28,h,.12,dx,h/2+.7,k,variant===1?colors.bronze:colors.ivory);}
   box(t,w+.8,.45,d+.8,0,h+1,0,colors.ivory);roofGarden(t,w-.8,d-.8,h+1.25);
   box(t,w*.36,1.5,d*.32,w*.12,h+2,0,colors.stone);
   // Thin roof canopy and open columns produce an architectural crown.
