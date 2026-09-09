@@ -37,7 +37,7 @@ export async function createTwinScene(host,{onFloor,onDevice,onHover,onReady}){
  floors.forEach(f=>{
   const level=new THREE.Group();level.name=`FLOOR_${String(f.id).padStart(2,'0')}`;level.userData.floor=f.id;level.position.y=(f.id-1)*4.3;root.add(level);
   const shell=new THREE.Group(),interior=new THREE.Group();level.add(shell,interior);interior.visible=false;
-  const slab=box(level,[24,.28,18],[0,.02,0],envelope.slabMaterial);slab.userData.floor=f.id;selectables.push(slab);
+  const slab=box(level,[24,.28,18],[0,.02,0],envelope.slabMaterial);slab.userData.floor=f.id;slab.renderOrder=-30;selectables.push(slab);
   if(f.id<6){
    envelope.facade(shell,f.id);
    box(interior,[24,.12,18],[0,.23,0],rim).renderOrder=-20;
