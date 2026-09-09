@@ -31,7 +31,7 @@ export function createCity(){
  box(root,95,.1,71,0,-.3,0,colors.road).renderOrder=-29;
  for(const x of [-14,14]){box(root,.12,.02,69,x,.01,0,colors.line).renderOrder=-25;for(let z=-31;z<32;z+=3)box(root,.14,.025,1.3,x+1,.02,z,colors.line).renderOrder=-24;}
  for(const z of [-7,15]){box(root,94,.03,.13,0,.015,z,colors.line).renderOrder=-25;for(let x=-44;x<44;x+=3)box(root,1.2,.025,.13,x,.02,z+.8,colors.line).renderOrder=-24;}
- const water=asset('water',34,0);box(water,12,.2,68,0,-.04,0,colors.water).renderOrder=-23;
+ const water=asset('water',34,0);const waterSurface=box(water,12,.2,68,0,-.04,0,colors.water);waterSurface.renderOrder=-23;
  for(const x of [-6.4,6.4])box(water,.55,.7,69,x,.3,0,colors.ivory);
  for(let z=-31;z<33;z+=4)box(water,6,.025,.055,(z%3)-1,.075,z,colors.line);
  // Bridges, handrails and walking decks.
@@ -75,7 +75,23 @@ export function createCity(){
  for(const [x,z,h] of [[-29,-21,35],[0,-21,30]]){const b=box(layers,1.4,1,1.4,x+8,h,z,colors.lime.clone());energyBars.push(b);}
  const warning= new T.Mesh(new T.OctahedronGeometry(.85),colors.warning);warning.position.set(25,5,5);layers.add(warning);
  const history=box(layers,24,.06,16,-29,.9,4,new T.MeshBasicMaterial({color:'#c044d9',transparent:true,opacity:.15,depthWrite:false}));
+ // Contextual overlays use the same deterministic story state as the UI.
+ const trafficLayer=new T.Group();layers.add(trafficLayer);const trafficMaterial=colors.lime.clone();
+ for(let x=-30;x<20;x+=10)box(trafficLayer,8,.08,2,x,1.35,-7,trafficMaterial);
+ const incident=new T.Mesh(new T.OctahedronGeometry(.8),colors.warning.clone());layers.add(incident);
+ const rain=new T.Group();layers.add(rain);const rainMaterial=new T.LineBasicMaterial({color:'#a9b9d0',transparent:true,opacity:.5});
+ for(let i=0;i<38;i++){const x=20+(i*7%17),z=-5+(i*11%23),y=7+(i%7);const geo=new T.BufferGeometry().setFromPoints([new T.Vector3(x,y,z),new T.Vector3(x-.15,y-1.4,z)]);rain.add(new T.Line(geo,rainMaterial));}
+ const materialGroups=[];
+ buildings.children.forEach(g=>{const cache=new Map();g.traverse(o=>{if(o.isMesh){const old=o.material;if(!cache.has(old)){const m=old.clone();cache.set(old,m);materialGroups.push({material:m,base:old.color.clone(),asset:g.userData.asset});}o.material=cache.get(old);}});});
  function update(s){
+  const shouldFocus=[3,4,5,6].includes(s.index);
+  materialGroups.forEach(({material,base,asset})=>material.color.copy(base).lerp(new T.Color('#f4f0f6'),shouldFocus && asset!==s.focus ? .6 : 0));
+  waterSurface.position.y=-.04+s.flood*.38;
+  rain.visible=s.flood>.12;
+  trafficLayer.visible=s.index===5&&s.useIndex===1;trafficMaterial.color.set(s.traffic==='High'?'#e05262':s.traffic==='Medium'?'#f2b84b':'#a8e629');
+  incident.visible=s.index===5&&[1,4].includes(s.useIndex);
+  incident.position.set(...(s.useIndex===4?[0,7,3]:[14,4,-7]));incident.material.color.set(s.incident==='Resolved'?'#a8e629':'#f2b84b');
+
   silos.forEach((g,i)=>{g.visible=s.index===1||s.index===2;g.scale.setScalar(s.index===2?1-.35*s.local:1);});
   paths.forEach((g,i)=>g.visible=s.index===2&&s.local>(i/10)||s.index===7);
   platform.visible=s.index===2||s.index===7;
