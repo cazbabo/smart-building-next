@@ -64,6 +64,21 @@ let pending=false;addEventListener('scroll',()=>{if(!pending){pending=true;reque
 // the text rather than measured: reading layout back per frame would stall the
 // render loop, and a few pixels of slack is enough for a keep-out test.
 const LABEL_ORDER=['command','water','civic','hospital','energy','industry','transit','school','housing','tourism'];
+// The collision test below answers "do these overlap", which is not the same
+// question as "are ten of these at once louder than the chapter being read".
+// Solid plum chips are heavy, and ten of them competed with the narrative in
+// every chapter that was not about all ten districts. Each chapter now names the
+// places its text actually mentions; Explore still shows the full set.
+const CHAPTER_LABELS={
+ overview:  ['command','civic','water','transit'],
+ fragmented:['water','transit','command'],
+ foundation:['command','civic','hospital','water','energy'],
+ iot:       ['water','energy','industry','command'],
+ flood:     ['water','command'],
+ priorities:LABEL_ORDER,          // this chapter is about every district
+ ai:        ['command','water','transit'],
+ roadmap:   ['command'],
+};
 function placeLabels(labels){
  const view=$('#city-view'),vw=view.clientWidth||1,vh=view.clientHeight||1;
  // The narrative scrolls over the right of the same canvas and sits above the
@@ -72,9 +87,11 @@ function placeLabels(labels){
  // not clear the text is dropped.
  const column=innerWidth>800?vw*.56/vw*100:101;
  const taken=[];
+ const allowed=explore?null:CHAPTER_LABELS[current]??LABEL_ORDER;
  for(const id of LABEL_ORDER){
   const label=$(`.name-${id}`),spot=labels[id];
   if(!label)continue;
+  if(allowed&&!allowed.includes(id)){label.hidden=true;continue;}
   if(!spot){label.hidden=true;continue;}
   const [x,y]=spot;
   const w=(label.textContent.length*6.4+22)/vw*100,h=27/vh*100;

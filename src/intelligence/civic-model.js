@@ -178,7 +178,7 @@ export function createCivicCity(kit=null){
   softBox(car,2.3,.62,1.1,0,.35,0,i%3?p.white:p.orchid);softBox(car,1.15,.45,.94,-.15,.84,0,p.glass);
   for(const x of [-.75,.75])for(const z of [-.55,.55]){const w=cylinder(car,.24,.13,x,.13,z,p.deep,10);w.rotation.x=Math.PI/2;}
  }
- const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
+ const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
  const warning=new T.Mesh(new T.OctahedronGeometry(.8),p.warning);warning.position.set(-2,6.5,24);overlays.add(warning);
  if(placer){
   // A roundabout where two ground streets meet, so the grid has one junction

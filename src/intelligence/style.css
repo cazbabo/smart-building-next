@@ -49,7 +49,13 @@
 .district-list button{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:13px 2px}
 .district-list button:hover{border-color:#C044D9;background:none}
 .takeaway{margin:32px 0}
-h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
+/* long-story.js writes the line break it wants into each title, but the heading
+   was set large enough that a 44% column overran it: "What could happen /
+   next? / Help people prepare." left "next?" hanging alone. A little less size
+   lets the authored break be the one that lands at most widths, and balance
+   shares the words out evenly on the narrow ones where it still cannot. */
+h1{font-size:clamp(38px,3.35vw,60px);margin-bottom:30px;text-wrap:balance}
+.section-intro,.story-points p,.takeaway{text-wrap:pretty}
 .section-phase{font-size:13px;margin-bottom:30px}
 .section-intro{font-size:21px;line-height:1.72;max-width:34ch;margin-bottom:34px}
 .story-points h2{font-size:18px;margin-bottom:8px}
@@ -81,7 +87,17 @@ h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
    roof or the command center's screen passes behind. */
 .experience-grid{display:grid;grid-template-columns:1fr;max-width:none}
 .visual-column,.narrative-column{grid-area:1/1}
-.narrative-column{position:relative;z-index:5;width:44%;margin-left:56%;padding:0 5vw 0 0;background:linear-gradient(90deg,#FAF8FC00,#FAF8FCD4 9%,#FAF8FCEE 24%)}
+/* The scrim used to stop at #FAF8FCEE - 93% - and only start climbing at 9% of
+   the column, which left the left edge of every paragraph sitting over 83-93%
+   ground. Roads, the civic dome and whole buildings read through the body copy,
+   which looks like unfinished work rather than depth. The answer is not to go
+   opaque and put the seam back: it is to blur what comes through. A masked
+   backdrop-filter ramps the blur in alongside the wash, so the city carries on
+   under the words as out-of-focus depth and never competes with a letterform. */
+.narrative-column{position:relative;z-index:5;width:44%;margin-left:56%;padding:0 5vw 0 0;background:linear-gradient(90deg,#FAF8FC00,#FAF8FCB0 7%,#FAF8FCF5 21%,#FAF8FC 30%)}
+.narrative-column::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+ backdrop-filter:blur(20px) saturate(.8);-webkit-backdrop-filter:blur(20px) saturate(.8);
+ -webkit-mask-image:linear-gradient(90deg,transparent,#000 24%);mask-image:linear-gradient(90deg,transparent,#000 24%)}
 .view-note{z-index:6}
 @media(max-width:1100px){
  .narrative-column{width:50%;margin-left:50%;padding-right:4vw}
@@ -90,6 +106,7 @@ h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
  .experience-grid{display:block}
  .visual-column,.narrative-column{grid-area:auto}
  .narrative-column{width:auto;margin-left:0;padding:0 26px;background:none}
+ .narrative-column::before{display:none}
 }
 /* Both sit under the narrative's scrim if left at the right edge. */
 #mode-label{margin-left:26px}
@@ -222,3 +239,32 @@ body[data-stage=hero] .site-header nav a:hover{color:#fff}
 .site-header,.brand,.site-header nav a{transition:background .35s,color .35s,border-color .35s}
 /* The eyebrow sits where the scrim has barely started, so it carries its own. */
 .hero-eyebrow{color:#E4D9EC;text-shadow:0 1px 14px #080610,0 0 26px #080610}
+
+/* The nav pills kept their pale #F0E9F4 fill when the header went dark, so the
+   three phase links read as washed-out lozenges against the night sky - the
+   lowest-contrast thing on the opening screen. They take the same glass
+   treatment as the hero buttons instead, and the active one keeps its lime. */
+body[data-stage=hero] .site-header nav a{background:#FFFFFF14;border:1px solid #FFFFFF29;color:#CFC3D8}
+body[data-stage=hero] .site-header nav a:hover{background:#FFFFFF24;border-color:#FFFFFF52;color:#fff}
+body[data-stage=hero] .site-header nav a[aria-current=step]{background:var(--lime);border-color:var(--lime);color:#2B3A10}
+body[data-stage=hero] .site-header nav a:last-child[aria-current=step]{background:#C044D9;border-color:#C044D9;color:#fff}
+.site-header nav a{border:1px solid transparent;transition:background .35s,color .35s,border-color .35s}
+
+/* Loading laid a 79%-opaque pale veil over the whole stage, which on the dark
+   opening washed the night sky to a flat grey rectangle with 13px of text in the
+   middle of it - the first five seconds of a presentation whose whole argument is
+   that this city is worth looking at. The veil comes off: the opening keeps the
+   sky it is supposed to have, the poster carries the story stage as it already
+   did, and the notice shrinks to a chip that sits out of the way. */
+#loading{inset:auto 0 14px 0;background:none;font-size:11px;letter-spacing:.03em;pointer-events:none}
+#loading::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--lime);
+ margin-right:8px;display:inline-block;vertical-align:middle;animation:loading-pulse 1.6s ease-in-out infinite}
+@keyframes loading-pulse{50%{opacity:.25}}
+body[data-stage=hero] #loading{color:#CFC3D8}
+@media(prefers-reduced-motion:reduce){#loading::before{animation:none}}
+
+/* Fewer labels at a time (see CHAPTER_LABELS) lets each one be lighter without
+   the set turning to mush: glass rather than a solid block, so a label reads as
+   a note laid on the city instead of a pin punched into it. */
+.map-names span{background:#52205ED6;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+ padding:6px 9px;border-radius:5px;font-weight:500;letter-spacing:.01em;box-shadow:0 4px 14px #52205E24}
