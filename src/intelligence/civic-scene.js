@@ -2,11 +2,15 @@ import * as T from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {createCivicCity} from './civic-model.js';
+import {loadKenneyKit} from './kenney-kit.js';
 export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  let renderer;
  try {renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}
  catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},home(){},focus(){}};}
- const scene=new T.Scene(),city=createCivicCity();scene.add(city.root);
+ // The kit is the city's architecture; if it cannot be fetched the scene still
+ // builds from procedural geometry rather than dropping to the static poster.
+ const kit=await loadKenneyKit().catch(()=>null);
+ const scene=new T.Scene(),city=createCivicCity(kit);scene.add(city.root);
  scene.add(new T.HemisphereLight(0xfffaff,0x8a7997,1.45));
  const sun=new T.DirectionalLight(0xfff5f9,2.6);sun.position.set(-45,85,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
  Object.assign(sun.shadow.camera,{left:-100,right:100,top:80,bottom:-80,near:1,far:220});sun.shadow.normalBias=.14;sun.shadow.bias=-.0003;scene.add(sun);

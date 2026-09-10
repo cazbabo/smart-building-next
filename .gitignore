@@ -2,3 +2,6 @@ dist/
 node_modules/
 .vercel/
 .buildings/
+
+# Generated from assets/kenney by npm run assets
+public/models/

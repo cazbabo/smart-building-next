@@ -1,21 +1,46 @@
 import * as T from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {createCivicMotion} from './civic-motion.js';
+import {KitPlacer} from './kenney-kit.js';
+// Stable per-position variety: the same city must come back on every reload, and
+// the offline poster has to match what the browser draws.
+const pick=(list,...seed)=>list[Math.abs(seed.reduce((h,v)=>Math.imul(h^Math.round(v*16),0x27d4eb2d),0x9e3779b9))%list.length];
 const cube=new T.BoxGeometry(1,1,1),softCube=new RoundedBoxGeometry(1,1,1,2,.06),crownGeometry=new T.SphereGeometry(1,12,8);
 const material=(color,more={})=>new T.MeshStandardMaterial({color,roughness:.65,...more});
-export function createCivicCity(){
+export function createCivicCity(kit=null){
  const root=new T.Group(),assets={},locations={},overlays=new T.Group(),rotors=[],vehicles=[],gates=[];root.add(overlays);
+ const placer=kit&&new KitPlacer();
  const p={white:material('#f6f1fa'),stone:material('#dcd4e5'),edge:material('#c5bacf'),glass:material('#497789',{metalness:.38,roughness:.22}),blue:material('#9155b4'),deep:material('#40284f'),teal:material('#C044D9'),road:material('#8b8995'),mark:material('#faf8fc'),grass:material('#8ca66f'),leaf:material('#547c63'),leaf2:material('#b4c77e'),wood:material('#b3986a'),roof:material('#9d75ac'),water:material('#36a5b7',{metalness:.2,roughness:.28}),solar:material('#245678',{metalness:.3,roughness:.27}),lime:material('#C7FF3D'),orchid:material('#C044D9'),warning:material('#edb64c')};
  function box(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cylinder(g,r,h,x,y,z,m=p.stone,n=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,n),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function sphere(g,r,x,y,z,m=p.leaf,s=[1,1,1]){const a=new T.Mesh(new T.SphereGeometry(r,12,8),m);a.position.set(x,y,z);a.scale.set(...s);a.castShadow=true;g.add(a);return a;}
  function tube(g,points,r,m){const curve=new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v)));const a=new T.Mesh(new T.TubeGeometry(curve,24,r,6,false),m);g.add(a);return a;}
- function tree(g,x,z,s=1){cylinder(g,.11*s,1.5*s,x,.75*s+.6,z,p.wood,6);for(const [i,[dx,dy,dz,r]] of [[0,0,0,.85],[-.4,-.3,.2,.6],[.35,-.35,-.25,.62]].entries()){const a=new T.Mesh(crownGeometry,i===1?p.leaf2:p.leaf);a.position.set(x+dx*s,2.25*s+.5+dy*s,z+dz*s);a.scale.set(r*s,r*s*1.15,r*s);a.castShadow=true;g.add(a);}}
+ function tree(g,x,z,s=1){
+  if(placer){const model=pick(kit.group('trees'),g.position.x+x,g.position.z+z);
+   placer.place(model,{owner:g,x,y:.5,z,scale:3.3*s/model.height,rotation:pick([0,1,2,3],g.position.x+x,g.position.z+z,7)*Math.PI/2});return;}
+  cylinder(g,.11*s,1.5*s,x,.75*s+.6,z,p.wood,6);for(const [i,[dx,dy,dz,r]] of [[0,0,0,.85],[-.4,-.3,.2,.6],[.35,-.35,-.25,.62]].entries()){const a=new T.Mesh(crownGeometry,i===1?p.leaf2:p.leaf);a.position.set(x+dx*s,2.25*s+.5+dy*s,z+dz*s);a.scale.set(r*s,r*s*1.15,r*s);a.castShadow=true;g.add(a);}}
  function softBox(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(softCube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function grove(g,x,z,n,axis='x'){for(let i=0;i<n;i++)tree(g,x+(axis==='x'?i*2:0),z+(axis==='z'?i*2:0),.8+(i%3)*.12);}
  function district(id,x,z,w,d,label){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;root.add(g);assets[id]=g;locations[id]=[x,6,z];g.name=label;softBox(g,w,.55,d,0,.05,0,p.white).renderOrder=-20;box(g,w-.5,.12,d-.5,0,.38,0,p.grass).renderOrder=-19;return g;}
  function windows(g,w,d,h,x=0,z=0,base=.6){for(let f=0;f<h;f++){const y=base+1.25+f*2.2;for(let xx=-w/2+.9;xx<w/2-.4;xx+=1.65){box(g,.95,1.15,.07,x+xx,y,z+d/2+.05,p.glass);box(g,.95,1.15,.07,x+xx,y,z-d/2-.05,p.glass);}for(let zz=-d/2+.9;zz<d/2-.4;zz+=1.65)for(const side of [-1,1])box(g,.07,1.15,.95,x+side*(w/2+.05),y,z+zz,p.glass);}}
  function block(g,w,d,floors,x=0,z=0,m=p.white){
+  // With a kit loaded the generic slab becomes a cluster of Kenney buildings
+  // filling the same rectangle, so every landmark around it keeps its position.
+  if(placer){
+   const height=floors*2.35+1.1;
+   const nx=Math.max(1,Math.round(w/5.6)),nz=Math.max(1,Math.round(d/5.6));
+   const cell=Math.min(w/nx,d/nz)*.86;
+   const key=height>9?'towers':floors<=1&&w<9?'houses':'blocks';
+   for(let i=0;i<nx;i++)for(let j=0;j<nz;j++){
+    // Local to the district group; the seed uses world position so the same
+    // building never lands twice in the same spot across reloads.
+    const lx=x+(i+.5-nx/2)*(w/nx),lz=z+(j+.5-nz/2)*(d/nz);
+    const wx=g.position.x+lx,wz=g.position.z+lz;
+    const model=pick(kit.fit(key,height,cell),wx,wz);
+    placer.place(model,{owner:g,x:lx,y:.5,z:lz,scale:cell/model.footprint,rotation:pick([0,1,2,3],wx,wz)*Math.PI/2});
+   }
+   return;
+  }
   softBox(g,w,floors*2.35,d,x,.65+floors*1.175,z,m);
   for(let f=0;f<floors;f++){
    const y=1.8+f*2.35;
@@ -31,6 +56,7 @@ export function createCivicCity(){
  }
 
  function roof(g,w,d,x,y,z){
+  if(placer)return;   // Kit buildings carry their own roof; a second one would float.
   const shape=new T.Shape();shape.moveTo(-w/2,0);shape.lineTo(0,1.65);shape.lineTo(w/2,0);shape.closePath();
   const geo=new T.ExtrudeGeometry(shape,{depth:d,bevelEnabled:false,steps:1});geo.translate(0,0,-d/2);
   const a=new T.Mesh(geo,p.roof);a.position.set(x,y,z);a.castShadow=true;g.add(a);
@@ -95,9 +121,23 @@ export function createCivicCity(){
  const sourceNodes=[];for(let i=0;i<6;i++){const x=-69+(i%3)*6,z=14+Math.floor(i/3)*5;const a=cylinder(root,2.8,.35,x,.15,z,p.white,6);a.renderOrder=-20;sourceNodes.push(a);cylinder(root,.65,.18,x,.45,z,i%2?p.glass:p.teal,8);}
  // Landscaped paths, seating and street hardware give the scene human scale.
  for(const [id,g] of Object.entries(assets)){if(id==='command')continue;for(const x of [-7,7]){softBox(g,1.6,.2,.55,x,1,7,p.wood);box(g,.12,.65,.45,x-.5,.7,7,p.deep);box(g,.12,.65,.45,x+.5,.7,7,p.deep);}}
- for(let i=0;i<8;i++){const car=new T.Group();root.add(car);vehicles.push(car);softBox(car,2.3,.62,1.1,0,.35,0,i%3?p.white:p.orchid);softBox(car,1.15,.45,.94,-.15,.84,0,p.glass);for(const x of [-.75,.75])for(const z of [-.55,.55]){const w=cylinder(car,.24,.13,x,.13,z,p.deep,10);w.rotation.x=Math.PI/2;}}
+ // Vehicles move individually along the road loop, so they stay real meshes
+ // rather than instances. civic-motion.js drives the group and expects the car
+ // to face +X; kit cars are modelled nose-along -Z, hence the quarter turn.
+ for(let i=0;i<8;i++){
+  const car=new T.Group();root.add(car);vehicles.push(car);
+  if(placer){
+   const model=pick(kit.group('cars'),i,i*7);
+   const scale=2.6/model.depth,body=new T.Mesh(model.geometry,model.material);
+   body.rotation.y=-Math.PI/2;body.scale.setScalar(scale);body.position.y=-model.base*scale;
+   body.castShadow=true;car.add(body);continue;
+  }
+  softBox(car,2.3,.62,1.1,0,.35,0,i%3?p.white:p.orchid);softBox(car,1.15,.45,.94,-.15,.84,0,p.glass);
+  for(const x of [-.75,.75])for(const z of [-.55,.55]){const w=cylinder(car,.24,.13,x,.13,z,p.deep,10);w.rotation.x=Math.PI/2;}
+ }
  const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
  const warning=new T.Mesh(new T.OctahedronGeometry(.8),p.warning);warning.position.set(-2,6.5,24);overlays.add(warning);
+ placer?.build();
  const motion=createCivicMotion({root,locations,rotors,vehicles,waterSurface,gates,risk,warning});
  motion.setStage('overview');motion.update(0,0,true);root.updateMatrixWorld(true);
  return {root,assets,locations,setStage:motion.setStage,update:motion.update,motion,rotors,vehicles,waterSurface,gates};

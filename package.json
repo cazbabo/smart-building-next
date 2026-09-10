@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 4173",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 4173"
+    "build": "npm run assets && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "assets": "node scripts/build-kenney-assets.mjs",
+    "poster": "npm run assets && node scripts/render-poster.mjs",
+    "test": "npm run assets && node tests/civic-motion.test.mjs && node tests/kenney-city.test.mjs"
   },
   "dependencies": {
     "three": "^0.185.1",
