@@ -1,43 +1,43 @@
-# City Intelligence — civic city and long-form story
+# City Intelligence
 
-Route: `/city-intelligence`. English-only presentation for enterprise customers.
+English-only enterprise presentation at `/city-intelligence`.
 
-## Current draft
+## Visual identity
 
-This revision follows the civic-city reference and the three-phase Data → IoT → AI reference. It replaces camera-driven, pinned chapter swapping with eight permanent sections in normal document flow. A stable city view remains beside the story on desktop. The model only rotates or focuses after an explicit Explore or district action.
+- Light canvas `#FAF8FC`, readable plum `#52205E`.
+- Lime `#C7FF3D`: connected data, primary controls and operational activity.
+- Orchid `#C044D9` and pink `#F05BB5`: intelligence, predictions and visual accents.
+- Trees, water and glazing retain material colors so the city stays legible.
+- Civic architecture uses rounded slabs, continuous glass, facade mullions, roof planting, colonnades and a dome. Hospital terraces include plant equipment. The scene includes a school, renewable district, industry, park, housing, transit and a command center.
 
-This revision has been built and checked locally. Publication was blocked by automatic approval review reporting a usage limit. It is not a verified live deployment.
+## Story and interaction
 
-## Presentation
+Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
 
-1. Different places, one connected city.
-2. Disconnected systems: a water warning and an exposed road.
-3. Phase 1 — consolidate existing data, establish locations and ownership.
-4. Phase 2 — fill information gaps with IoT observations.
-5. Flood example — detect, understand and coordinate.
-6. Apply the shared foundation across public services.
-7. Phase 3 — compare current conditions and an illustrative forecast; people review recommendations.
-8. A phased adoption roadmap.
+Ordinary vertical scrolling drives the active chapter and its progress. The orthographic camera remains stable while reading. Explore enables intentional rotation and district focus. The canvas is resized only when its actual dimensions change.
 
-All figures are mock observations. The flood example uses a 1.40 m illustrative threshold, a 1.60 m observation and an illustrative 1.90 m forecast. There is no actual forecasting service, live connection or device actuation.
+- Ambient animation: vehicles follow the central road loop; turbine rotors turn.
+- Data phase: routes progressively connect seven districts to the command center, with moving lime/pink packets.
+- IoT phase: elevated sensor markers show covered locations.
+- Flood example: mock water level progresses from 1.20 to 1.60 m; the simulated water surface rises and gate panels lift. The UI and scene use the same telemetry function.
+- AI phase: a pink footprint expands alongside an illustrative 1.60 to 1.90 m forecast.
+- Reverse scrolling restores the corresponding scenario state.
+- Pause animation stops the ambient clock while preserving scroll-based scenario selection. Reduced motion applies immediate state changes without continuous animation.
+- Rendering is capped around 30 fps, stops in hidden tabs and when the canvas is outside the viewport. Geometry is created once, not per frame.
 
-## Model and interaction
+All values and device actions are illustrative. No live forecasting service, sensor connection or physical device control exists.
 
-- `civic-model.js`: procedural Three.js civic administration, hospital, school, park, factory, renewable energy, transit terminal, flood gate, housing and command center. Includes windows, roofs, columns, dome, rooftop equipment, roads, crossings, vehicles, trees, solar panels, turbines and operator desks.
-- `civic-scene.js`: orthographic camera, WebGL materials and shadows, render on demand. Camera stays independent of scroll position. ResizeObserver changes the framebuffer only when the canvas dimensions change.
-- `app.js`: permanent story sections. One active chapter determines the relevant data/sensor/risk layers; scrolling does not remount the city, fade materials or move the camera.
-- Explicit Explore allows limited drag rotation and building selection. District details explain data source, platform behavior and the team's action. Reset and Escape restore the overview.
-- Three HTML labels project from model coordinates. They do not intercept mouse input.
-- Mobile and unavailable WebGL use an explicitly labeled static poster with the complete readable story. They do not pretend the poster is an interactive model.
-- Reduced-motion preferences disable smooth anchor scrolling. Native dialog, skip link, focus styles and fullscreen feedback are provided.
+## Implementation
 
-## Validation and limits
+`story-state.js` is a lightweight shared telemetry function. `civic-motion.js` controls the animated meshes. `civic-model.js` builds the city; `civic-scene.js` manages camera, lighting and animation lifecycle. `app.js` owns the narrative, readout and accessible HTML controls.
 
-- Vite production build passes for all three existing page entries.
-- Geometry checks pass: 10 matching district/detail IDs, 961 meshes and 32,810 triangles; finite transforms and vertices.
-- All eight chapter states checked, including flood/AI risk visibility and restoration to overview.
-- Offline Three.js SVG render inspected and converted to the fallback poster. This vector render does not reproduce WebGL shadows and can have painter-order artifacts; it is not browser verification.
-- New scrolling, dialog behavior and WebGL appearance still require browser/device verification. The available remote browser could not reach the local dev server, and publication is blocked.
-- The model is a procedural interpretation of the reference, not an exact reconstruction or photorealistic asset pack.
+Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled static model preview with the complete text story. The static preview is an offline vector render and does not reproduce GPU lighting.
 
-The previous city scene modules remain in the repository but are not imported by this page. Existing Smart Building and AIS pages retain their entry points. Unpublished `/smart-city` draft files are outside this change.
+## Verification
+
+- Production build for all three page entries.
+- `node tests/civic-motion.test.mjs`: vehicles and rotors move; equal timestamps preserve ambient poses; connection reveal progresses; water and gates reverse; mock forecast values match; geometry counts remain stable through every chapter.
+- 1,570 meshes, 103,242 triangles before any renderer batching.
+- Offline model render inspected. GPU appearance and frame rate cannot be fully verified in the cloud browser where WebGL is unavailable.
+
+The existing Smart Building/AIS pages retain their entry points. Unpublished `/smart-city` draft files are not part of this route.
