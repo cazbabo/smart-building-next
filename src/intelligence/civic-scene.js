@@ -11,13 +11,18 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  // builds from procedural geometry rather than dropping to the static poster.
  const kit=await loadKenneyKit().catch(()=>null);
  const scene=new T.Scene(),city=createCivicCity(kit);scene.add(city.root);
- scene.add(new T.HemisphereLight(0xfffaff,0x8a7997,1.45));
- const sun=new T.DirectionalLight(0xfff5f9,2.6);sun.position.set(-45,85,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
- Object.assign(sun.shadow.camera,{left:-100,right:100,top:80,bottom:-80,near:1,far:220});sun.shadow.normalBias=.14;sun.shadow.bias=-.0003;scene.add(sun);
- const fill=new T.DirectionalLight(0xd8c4ff,.7);fill.position.set(55,35,-40);scene.add(fill);
+ // Ambient light this strong flattens the city: it lifts the shaded faces to
+ // nearly the lit ones, so nothing reads as solid. Keep it low, let the key
+ // light carry the form, and use a cool fill so the shadow sides stay legible.
+ scene.add(new T.HemisphereLight(0xfffaff,0x8a7997,.62));
+ const sun=new T.DirectionalLight(0xfff3ee,3.1);sun.position.set(-45,85,35);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+ // Fitted to the city plus the command center rather than a loose box, which
+ // buys roughly half again the shadow resolution at the same map size.
+ Object.assign(sun.shadow.camera,{left:-82,right:56,top:52,bottom:-52,near:1,far:220});sun.shadow.normalBias=.11;sun.shadow.bias=-.0003;scene.add(sun);
+ const fill=new T.DirectionalLight(0xcdbcf5,.5);fill.position.set(55,35,-40);scene.add(fill);
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
- renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1;renderer.setClearColor(0xfaf8fc,0);
- const pmrem=new T.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.1).texture;scene.environmentIntensity=.65;room.dispose();pmrem.dispose();
+ renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.setClearColor(0xfaf8fc,0);
+ const pmrem=new T.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.1).texture;scene.environmentIntensity=.42;room.dispose();pmrem.dispose();
  host.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Animated 3D civic district and command center');
  const camera=new T.OrthographicCamera(-70,70,60,-60,.1,400),controls=new OrbitControls(camera,renderer.domElement);
  controls.enabled=false;controls.enableDamping=false;controls.enablePan=false;controls.enableZoom=false;

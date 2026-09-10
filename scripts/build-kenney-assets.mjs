@@ -8,22 +8,54 @@ import {stripAttributes} from './glb.mjs';
 const SOURCE = 'assets/kenney', TARGET = 'public/models';
 
 // Only these reach the browser; the rest of each kit stays in assets/.
+// The low-detail commercial blocks average 164 triangles against 1,089 for the
+// detailed ones, so they carry the bulk of the city and the detailed models are
+// spent where the camera is close.
 const ROSTER = {
  commercial: [
   'building-a', 'building-b', 'building-c', 'building-d', 'building-e', 'building-f',
-  'building-g', 'building-h',
-  'building-n', 'building-skyscraper-a', 'building-skyscraper-b',
-  'building-skyscraper-c', 'building-skyscraper-d', 'building-skyscraper-e',
+  'building-g', 'building-h', 'building-n',
+  'building-skyscraper-a', 'building-skyscraper-b', 'building-skyscraper-c',
+  'building-skyscraper-d', 'building-skyscraper-e',
+  'low-detail-building-a', 'low-detail-building-b', 'low-detail-building-c',
+  'low-detail-building-d', 'low-detail-building-e', 'low-detail-building-f',
+  'low-detail-building-g', 'low-detail-building-h', 'low-detail-building-i',
+  'low-detail-building-j', 'low-detail-building-k', 'low-detail-building-l',
+  'low-detail-building-m', 'low-detail-building-n',
+  'low-detail-building-wide-a', 'low-detail-building-wide-b',
+  'detail-awning', 'detail-awning-wide', 'detail-overhang', 'detail-overhang-wide',
+  'detail-parasol-a', 'detail-parasol-b',
  ],
  suburban: [
   'building-type-a', 'building-type-b', 'building-type-c', 'building-type-d',
   'building-type-e', 'building-type-f', 'building-type-g', 'building-type-h',
   'building-type-i', 'building-type-j', 'building-type-k', 'building-type-l',
+  'building-type-n', 'building-type-p', 'building-type-r', 'building-type-t',
   'tree-large', 'tree-small', 'planter',
+  'fence', 'fence-low', 'fence-1x3', 'fence-2x2',
+  'path-long', 'path-stones-long', 'driveway-short',
  ],
  cars: ['sedan', 'taxi', 'van', 'suv', 'ambulance', 'police'],
- roads: ['traffic-light', 'electricity-pole', 'road-sign-street'],
+ roads: [
+  'traffic-light', 'traffic-light-hanging', 'electricity-pole', 'road-sign-street',
+  'road-sign-warning', 'road-sign-stop', 'light-square', 'light-square-double',
+  'light-curved', 'light-curved-double', 'dumpster', 'construction-barrier',
+  'construction-cone',
+ ],
 };
+
+// One atlas per kit means one colour scheme per kit, and a city where every
+// building shares a palette reads as a single model rather than a place. Each
+// kit therefore ships several atlases: the neutrals are identical across all of
+// them so the city stays coherent, while the accent hues are pulled toward a
+// different brand colour in each. Green and cyan are never re-aimed - they mark
+// planting and water, which carry meaning in the scene.
+const VARIANT_HUES = [null, 287, 250, 322, 215, 38];   // neutral, plum, periwinkle, rose, steel, sand
+const SEMANTIC = new Set([95, 188]);
+// A variant has to reach the building body, not just its trim: Kenney's
+// commercial stock is mostly grey, so re-aiming the accents alone leaves the
+// city monochrome. Variants therefore tint the neutrals too, hard enough to read
+// across a district but well short of a painted facade.
 
 // Hue families of the site palette. Source hue picks the family; the atlas keeps
 // its own lightness so Kenney's baked shading and window detail survive.
@@ -71,19 +103,29 @@ function toRgb(h, s, l) {
  return [f(h + 120), f(h), f(h - 120)].map(v => Math.max(0, Math.min(255, Math.round(v * 255))));
 }
 
-function recolour(image) {
+function recolour(image, dominant = null) {
  const {rgba} = image;
  for (let i = 0; i < rgba.length; i += 4) {
   if (rgba[i + 3] === 0) continue;
   const [h, s, l] = toHsl(rgba[i], rgba[i + 1], rgba[i + 2]);
-  let hue = NEUTRAL_HUE, sat = Math.min(s, neutralSat(l));
-  if (s >= 0.14) {
-   const family = FAMILIES.find(f => h < f.upTo);
+  const family = s >= 0.14 ? FAMILIES.find(f => h < f.upTo) : null;
+  const semantic = family && SEMANTIC.has(family.hue);
+  let hue, sat, lightness = l < 0.12 ? l + 0.05 : l;
+  if (dominant !== null && !semantic) {
+   // Keep a little internal spread so a building is not one flat colour.
+   hue = dominant + (family ? FAMILIES.indexOf(family) % 3 - 1 : 0) * 13;
+   sat = family ? Math.min(family.sat + 0.06, 0.3 + s * 0.4) : 0.3;
+   // Kenney's commercial stock is near-white, and a tint at that lightness is
+   // invisible. Compressing the range downward is what makes the variant read.
+   lightness = 0.26 + lightness * 0.58;
+  } else if (family) {
    hue = family.hue;
    sat = Math.min(family.sat, 0.25 + s * 0.45);
+  } else {
+   hue = NEUTRAL_HUE;
+   sat = Math.min(s, neutralSat(l));
   }
-  // Lift the darkest values slightly: the site sits on a light canvas.
-  const [r, g, b] = toRgb(hue, sat, l < 0.12 ? l + 0.05 : l);
+  const [r, g, b] = toRgb(hue, sat, lightness);
   rgba[i] = r; rgba[i + 1] = g; rgba[i + 2] = b;
  }
  return image;
@@ -98,8 +140,11 @@ for (const [kit, names] of Object.entries(ROSTER)) {
   fs.writeFileSync(path.join(TARGET, kit, `${name}.glb`), stripAttributes(fs.readFileSync(from)));
   models++;
  }
- const atlas = decodePng(fs.readFileSync(path.join(SOURCE, kit, 'Textures/colormap.png')));
- fs.writeFileSync(path.join(TARGET, kit, 'Textures/colormap.png'), encodePng(recolour(atlas)));
+ const source = fs.readFileSync(path.join(SOURCE, kit, 'Textures/colormap.png'));
+ VARIANT_HUES.forEach((dominant, index) => {
+  const name = index === 0 ? 'colormap.png' : `colormap-${index}.png`;
+  fs.writeFileSync(path.join(TARGET, kit, 'Textures', name), encodePng(recolour(decodePng(source), dominant)));
+ });
 }
 const bytes = Object.entries(ROSTER).reduce((sum, [kit, names]) =>
  sum + names.reduce((n, name) => n + fs.statSync(path.join(TARGET, kit, `${name}.glb`)).size, 0), 0);

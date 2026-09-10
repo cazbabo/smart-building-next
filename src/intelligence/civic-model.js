@@ -4,12 +4,13 @@ import {createCivicMotion} from './civic-motion.js';
 import {KitPlacer} from './kenney-kit.js';
 // Stable per-position variety: the same city must come back on every reload, and
 // the offline poster has to match what the browser draws.
-const pick=(list,...seed)=>list[Math.abs(seed.reduce((h,v)=>Math.imul(h^Math.round(v*16),0x27d4eb2d),0x9e3779b9))%list.length];
+const hash=(...seed)=>{let h=0x9e3779b9;for(const v of seed)h=Math.imul(h^Math.round(v*16),0x27d4eb2d);h^=h>>>15;return (h>>>0)/4294967296;};
+const pick=(list,...seed)=>list[Math.floor(hash(...seed)*list.length)%list.length];
 const cube=new T.BoxGeometry(1,1,1),softCube=new RoundedBoxGeometry(1,1,1,2,.06),crownGeometry=new T.SphereGeometry(1,12,8);
 const material=(color,more={})=>new T.MeshStandardMaterial({color,roughness:.65,...more});
 export function createCivicCity(kit=null){
  const root=new T.Group(),assets={},locations={},overlays=new T.Group(),rotors=[],vehicles=[],gates=[];root.add(overlays);
- const placer=kit&&new KitPlacer();
+ const placer=kit&&new KitPlacer(kit);
  const p={white:material('#f6f1fa'),stone:material('#dcd4e5'),edge:material('#c5bacf'),glass:material('#497789',{metalness:.38,roughness:.22}),blue:material('#9155b4'),deep:material('#40284f'),teal:material('#C044D9'),road:material('#8b8995'),mark:material('#faf8fc'),grass:material('#8ca66f'),leaf:material('#547c63'),leaf2:material('#b4c77e'),wood:material('#b3986a'),roof:material('#9d75ac'),water:material('#36a5b7',{metalness:.2,roughness:.28}),solar:material('#245678',{metalness:.3,roughness:.27}),lime:material('#C7FF3D'),orchid:material('#C044D9'),warning:material('#edb64c')};
  function box(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cylinder(g,r,h,x,y,z,m=p.stone,n=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,n),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
@@ -21,23 +22,54 @@ export function createCivicCity(kit=null){
   cylinder(g,.11*s,1.5*s,x,.75*s+.6,z,p.wood,6);for(const [i,[dx,dy,dz,r]] of [[0,0,0,.85],[-.4,-.3,.2,.6],[.35,-.35,-.25,.62]].entries()){const a=new T.Mesh(crownGeometry,i===1?p.leaf2:p.leaf);a.position.set(x+dx*s,2.25*s+.5+dy*s,z+dz*s);a.scale.set(r*s,r*s*1.15,r*s);a.castShadow=true;g.add(a);}}
  function softBox(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(softCube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function grove(g,x,z,n,axis='x'){for(let i=0;i<n;i++)tree(g,x+(axis==='x'?i*2:0),z+(axis==='z'?i*2:0),.8+(i%3)*.12);}
- function district(id,x,z,w,d,label){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;root.add(g);assets[id]=g;locations[id]=[x,6,z];g.name=label;softBox(g,w,.55,d,0,.05,0,p.white).renderOrder=-20;box(g,w-.5,.12,d-.5,0,.38,0,p.grass).renderOrder=-19;return g;}
+ function district(id,x,z,w,d,label){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;root.add(g);assets[id]=g;locations[id]=[x,6,z];g.name=label;softBox(g,w,.55,d,0,.05,0,p.white).renderOrder=-20;box(g,w-.5,.12,d-.5,0,.38,0,p.grass).renderOrder=-19;
+  // Plant the platform margin. Each district's own content sits in the middle,
+  // so the outer strip is otherwise bare lawn and reads as unbuilt ground.
+  if(placer)for(const [ex,ez] of edgePlots(w,d))tree(g,ex,ez,.7+hash(x+ex,z+ez)*.55);
+  return g;}
+ // Positions around the platform edge, skipping the middle of each side so the
+ // entrances the districts build there stay clear.
+ function edgePlots(w,d){
+  const plots=[],ix=w/2-1.5,iz=d/2-1.5;
+  for(let t=-ix;t<=ix;t+=2.6){if(Math.abs(t)<w*.18)continue;plots.push([t,-iz],[t,iz]);}
+  for(let t=-iz+2.6;t<iz;t+=2.6){if(Math.abs(t)<d*.2)continue;plots.push([-ix,t],[ix,t]);}
+  return plots;
+ }
  function windows(g,w,d,h,x=0,z=0,base=.6){for(let f=0;f<h;f++){const y=base+1.25+f*2.2;for(let xx=-w/2+.9;xx<w/2-.4;xx+=1.65){box(g,.95,1.15,.07,x+xx,y,z+d/2+.05,p.glass);box(g,.95,1.15,.07,x+xx,y,z-d/2-.05,p.glass);}for(let zz=-d/2+.9;zz<d/2-.4;zz+=1.65)for(const side of [-1,1])box(g,.07,1.15,.95,x+side*(w/2+.05),y,z+zz,p.glass);}}
  function block(g,w,d,floors,x=0,z=0,m=p.white){
   // With a kit loaded the generic slab becomes a cluster of Kenney buildings
   // filling the same rectangle, so every landmark around it keeps its position.
   if(placer){
-   const height=floors*2.35+1.1;
-   const nx=Math.max(1,Math.round(w/5.6)),nz=Math.max(1,Math.round(d/5.6));
-   const cell=Math.min(w/nx,d/nz)*.86;
-   const key=height>9?'towers':floors<=1&&w<9?'houses':'blocks';
+   const nx=Math.max(1,Math.round(w/4.2)),nz=Math.max(1,Math.round(d/4.2));
+   const stepX=w/nx,stepZ=d/nz,cell=Math.min(stepX,stepZ)*.92;
+   const base=floors<=1&&w<9?'houses':'blocks';
    for(let i=0;i<nx;i++)for(let j=0;j<nz;j++){
     // Local to the district group; the seed uses world position so the same
     // building never lands twice in the same spot across reloads.
-    const lx=x+(i+.5-nx/2)*(w/nx),lz=z+(j+.5-nz/2)*(d/nz);
+    const lx=x+(i+.5-nx/2)*stepX,lz=z+(j+.5-nz/2)*stepZ;
     const wx=g.position.x+lx,wz=g.position.z+lz;
-    const model=pick(kit.fit(key,height,cell),wx,wz);
-    placer.place(model,{owner:g,x:lx,y:.5,z:lz,scale:cell/model.footprint,rotation:pick([0,1,2,3],wx,wz)*Math.PI/2});
+    const r=hash(wx,wz),r2=hash(wz,wx,3),r3=hash(wx,wz,7);
+    // An even grid of same-sized buildings reads as a toy. Vary height, plan
+    // size, colour and offset per plot, leave the odd plot open, and let a few
+    // plots take a tower so the skyline is not one flat line.
+    if(r<.11){tree(g,lx+(r2-.5)*stepX*.4,lz+(r-.5)*stepZ*.4,.85+r2*.5);continue;}
+    const tower=r>.89&&floors>=2;
+    const height=(floors*2.35)*(tower?1.9+r2:.72+r*.95)+1.1;
+    const plan=cell*(.8+r2*.34);
+    // Detailed stock reads at the front of a plot; the rest is low-detail so a
+    // denser city does not cost proportionally more triangles.
+    const key=tower?'towers':r3<.42?base:base==='houses'?'houses':'fill';
+    const model=pick(kit.fit(key,height,plan),wx,wz);
+    const px=lx+(r2-.5)*(stepX-plan)*.7,pz=lz+(r-.5)*(stepZ-plan)*.7;
+    const turn=pick([0,1,2,3],wx,wz)*Math.PI/2;
+    placer.place(model,{owner:g,x:px,y:.5,z:pz,scale:plan/model.footprint,rotation:turn,
+     variant:Math.floor(r3*kit.variants)});
+    // Awning or parasol against the streetward face of some frontages.
+    if(r2>.62&&!tower){
+     const trim=pick(kit.group('frontage'),wx,wz,13),reach=plan*.5+trim.depth*plan/trim.footprint*.4;
+     placer.place(trim,{owner:g,x:px+Math.sin(turn)*reach,y:.5,z:pz+Math.cos(turn)*reach,
+      scale:plan/trim.footprint*.8,rotation:turn,variant:Math.floor(r*kit.variants)});
+    }
    }
    return;
   }
@@ -137,6 +169,31 @@ export function createCivicCity(kit=null){
  }
  const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
  const warning=new T.Mesh(new T.OctahedronGeometry(.8),p.warning);warning.position.set(-2,6.5,24);overlays.add(warning);
+ // Street level. The road corridors between platforms carried nothing but paint,
+ // which is most of why the city read as a model rather than a place.
+ if(placer){
+  const ROAD_Y=0;                                  // the road slab top, not the platforms
+  const put=(model,px,pz,height,rotation)=>{
+   if(!model)return;
+   placer.place(model,{owner:root,x:px,y:ROAD_Y,z:pz,scale:height/model.height,rotation});
+  };
+  const parked=kit.group('cars');
+  const kerb=(seed,px,pz,rotation)=>{
+   const r=hash(...seed);
+   if(r<.26)put(pick(kit.group('signals'),...seed),px,pz,4.3,rotation);
+   else if(r<.58)put(pick(kit.group('lamps'),...seed),px,pz,5.2,rotation);
+   else if(r<.68)put(pick(kit.group('clutter'),...seed),px,pz,1.7,rotation);
+   else{const car=pick(parked,...seed);put(car,px,pz,car.height*(2.6/car.depth),rotation+Math.PI/2);}
+  };
+  for(const rx of [-17,14])for(let z=-27;z<30;z+=4.5){
+   const side=hash(rx,z)<.5?-1:1;
+   kerb([rx,z],rx+side*1.6,z,side>0?Math.PI/2:-Math.PI/2);
+  }
+  for(const rz of [-10,13])for(let x=-38;x<40;x+=4.5){
+   const side=hash(x,rz,9)<.5?-1:1;
+   kerb([x,rz,9],x,rz+side*1.6,side>0?Math.PI:0);
+  }
+ }
  placer?.build();
  const motion=createCivicMotion({root,locations,rotors,vehicles,waterSurface,gates,risk,warning});
  motion.setStage('overview');motion.update(0,0,true);root.updateMatrixWorld(true);

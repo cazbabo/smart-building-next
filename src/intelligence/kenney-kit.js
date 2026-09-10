@@ -12,14 +12,42 @@ const CATALOGUE = {
  blocks: ['commercial/building-a', 'commercial/building-b', 'commercial/building-c',
   'commercial/building-d', 'commercial/building-e', 'commercial/building-f',
   'commercial/building-g', 'commercial/building-h', 'commercial/building-n'],
+ // Cheap background stock: a sixth of the triangles of the detailed blocks, so
+ // the city can be filled in properly without spending the frame on rooftops
+ // nobody looks at.
+ fill: ['commercial/low-detail-building-a', 'commercial/low-detail-building-b',
+  'commercial/low-detail-building-c', 'commercial/low-detail-building-d',
+  'commercial/low-detail-building-e', 'commercial/low-detail-building-f',
+  'commercial/low-detail-building-g', 'commercial/low-detail-building-h',
+  'commercial/low-detail-building-i', 'commercial/low-detail-building-j',
+  'commercial/low-detail-building-k', 'commercial/low-detail-building-l',
+  'commercial/low-detail-building-m', 'commercial/low-detail-building-n',
+  'commercial/low-detail-building-wide-a', 'commercial/low-detail-building-wide-b'],
  houses: ['suburban/building-type-a', 'suburban/building-type-b', 'suburban/building-type-c',
   'suburban/building-type-d', 'suburban/building-type-e', 'suburban/building-type-f',
   'suburban/building-type-g', 'suburban/building-type-h', 'suburban/building-type-i',
-  'suburban/building-type-j', 'suburban/building-type-k', 'suburban/building-type-l'],
+  'suburban/building-type-j', 'suburban/building-type-k', 'suburban/building-type-l',
+  'suburban/building-type-n', 'suburban/building-type-p', 'suburban/building-type-r',
+  'suburban/building-type-t'],
  trees: ['suburban/tree-large', 'suburban/tree-small'],
- street: ['suburban/planter', 'roads/traffic-light', 'roads/electricity-pole', 'roads/road-sign-street'],
+ // Awnings and parasols break up a bare facade at street level.
+ frontage: ['commercial/detail-awning', 'commercial/detail-awning-wide',
+  'commercial/detail-overhang', 'commercial/detail-overhang-wide',
+  'commercial/detail-parasol-a', 'commercial/detail-parasol-b'],
+ ground: ['suburban/planter', 'suburban/fence', 'suburban/fence-low', 'suburban/fence-1x3',
+  'suburban/fence-2x2', 'suburban/path-long', 'suburban/path-stones-long',
+  'suburban/driveway-short'],
+ lamps: ['roads/light-square', 'roads/light-square-double', 'roads/light-curved',
+  'roads/light-curved-double', 'roads/electricity-pole'],
+ signals: ['roads/traffic-light', 'roads/traffic-light-hanging', 'roads/road-sign-street',
+  'roads/road-sign-warning', 'roads/road-sign-stop'],
+ clutter: ['roads/dumpster', 'roads/construction-barrier', 'roads/construction-cone'],
  cars: ['cars/sedan', 'cars/taxi', 'cars/van', 'cars/suv', 'cars/ambulance', 'cars/police'],
 };
+
+// Atlas variants written by scripts/build-kenney-assets.mjs. Index 0 is the base
+// atlas the GLB already references; the rest re-aim the accent hues.
+const VARIANTS = 6;
 
 // Bake node transforms into the geometry and merge the primitives, so a model
 // becomes one geometry that InstancedMesh can place without a wrapper Object3D.
@@ -53,11 +81,11 @@ function describe(name, {geometry, material}) {
  };
 }
 
-export async function loadKenneyKit(base = '/models') {
+export async function loadKenneyKit(base_url = '/models') {
  const loader = new GLTFLoader();
  const names = [...new Set(Object.values(CATALOGUE).flat())];
  const loaded = await Promise.all(names.map(async name => {
-  const gltf = await loader.loadAsync(`${base}/${name}.glb`);
+  const gltf = await loader.loadAsync(`${base_url}/${name}.glb`);
   const flat = flatten(gltf.scene);
   return flat && describe(name, flat);
  }));
@@ -71,17 +99,50 @@ export async function loadKenneyKit(base = '/models') {
  }
 
  const group = key => CATALOGUE[key].map(name => byName.get(name)).filter(Boolean);
- const materials = new Set();
- for (const model of byName.values()) {
-  model.material.roughness = 0.78;
-  model.material.metalness = 0;
-  materials.add(model.material);
- }
+
+ // Each GLB is fetched separately, so GLTFLoader hands back its own material and
+ // its own copy of the kit's atlas - dozens of uploads of one image. Collapse
+ // them to one material per kit, then clone that once per atlas variant, so
+ // colour variety costs a handful of materials rather than one per building.
+ const textures = new T.TextureLoader();
+ const variantMaterial = new Map();
+ const kits = [...new Set(names.map(name => name.split('/')[0]))];
+ await Promise.all(kits.map(async kit => {
+  const owned = [...byName.values()].filter(model => model.name.startsWith(`${kit}/`));
+  const base = owned[0]?.material;
+  if (!base) return;
+  base.roughness = 0.78;
+  base.metalness = 0;
+  for (const model of owned) {
+   if (model.material !== base) model.material.dispose();
+   model.material = base;
+  }
+  const clones = [base];
+  for (let index = 1; index < VARIANTS; index++) {
+   const map = await textures.loadAsync(`${base_url}/${kit}/Textures/colormap-${index}.png`);
+   map.flipY = false;
+   map.colorSpace = base.map?.colorSpace ?? T.SRGBColorSpace;
+   map.wrapS = map.wrapT = T.ClampToEdgeWrapping;
+   map.minFilter = base.map?.minFilter ?? T.LinearMipmapLinearFilter;
+   map.magFilter = base.map?.magFilter ?? T.LinearFilter;
+   const clone = base.clone();
+   clone.map = map;
+   clones.push(clone);
+  }
+  variantMaterial.set(kit, clones);
+ }));
+ const materials = [...variantMaterial.values()].flat();
 
  return {
   get: name => byName.get(name),
   group,
-  materials: [...materials],
+  materials,
+  variants: VARIANTS,
+  /** Material for `model` in atlas variant `index`, falling back to its own. */
+  material(model, index = 0) {
+   const clones = variantMaterial.get(model.name.split('/')[0]);
+   return clones?.[index % clones.length] ?? model.material;
+  },
   /**
    * The `count` models whose natural height lands closest to `height` once
    * scaled to `footprint`. Returning several rather than the single best is what
@@ -102,19 +163,22 @@ export async function loadKenneyKit(base = '/models') {
  * hundreds of buildings costs a draw call per distinct model rather than per building.
  */
 export class KitPlacer {
- constructor() { this.queues = new Map(); }
+ constructor(kit) { this.kit = kit; this.queues = new Map(); }
 
  /**
   * `owner` is the group the instances belong to - a district, or the city root.
   * Instances are kept under their owner so Explore's click-to-focus still finds
   * the district through userData.asset on the way up the parent chain.
+  * `variant` selects an atlas, which is how two of the same model end up
+  * different colours.
   */
- place(model, {owner, x, y = 0, z, scale = 1, rotation = 0}) {
+ place(model, {owner, x, y = 0, z, scale = 1, rotation = 0, variant = 0}) {
   if (!model) return;
   if (!this.queues.has(owner)) this.queues.set(owner, new Map());
   const byModel = this.queues.get(owner);
-  if (!byModel.has(model)) byModel.set(model, []);
-  byModel.get(model).push(new T.Matrix4().compose(
+  const key = `${model.name}#${variant}`;
+  if (!byModel.has(key)) byModel.set(key, {model, variant, matrices: []});
+  byModel.get(key).matrices.push(new T.Matrix4().compose(
    new T.Vector3(x, y - model.base * scale, z),
    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rotation),
    new T.Vector3(scale, scale, scale),
@@ -123,13 +187,13 @@ export class KitPlacer {
 
  build() {
   for (const [owner, byModel] of this.queues) {
-   for (const [model, matrices] of byModel) {
-    const mesh = new T.InstancedMesh(model.geometry, model.material, matrices.length);
+   for (const [key, {model, variant, matrices}] of byModel) {
+    const mesh = new T.InstancedMesh(model.geometry, this.kit.material(model, variant), matrices.length);
     matrices.forEach((matrix, index) => mesh.setMatrixAt(index, matrix));
     mesh.instanceMatrix.needsUpdate = true;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.name = model.name;
+    mesh.name = key;
     owner.add(mesh);
    }
   }

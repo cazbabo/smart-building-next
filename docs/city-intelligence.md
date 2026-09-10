@@ -27,6 +27,21 @@ Consolidation chapter. Orchid and pink are likewise reserved for the AI chapter,
 so buildings take a muted rose instead. Greens stay green for planting and cyan
 stays cyan for water, since both carry meaning in the scene.
 
+One atlas per kit would mean one colour scheme per kit, and a city where every
+building shares a palette reads as a single model rather than a place. The build
+therefore writes six atlases per kit: a neutral one, then five that aim the
+accents at plum, periwinkle, rose, steel and sand. Kenney's commercial stock is
+near-white, so a variant that only re-tinted the accents stayed invisible;
+variants also tint the neutrals and compress lightness downward, which is what
+makes them read across a district. Green and cyan are never re-aimed. Only
+buildings take a variant - trees, cars and street furniture always draw from the
+neutral atlas, so a variant can never turn a tree trunk plum.
+
+Each variant is one cloned material shared by every model in its kit. GLTFLoader
+hands back a separate material and a separate copy of the atlas per GLB, which
+would be dozens of uploads of one image, so the loader collapses them to one
+material per kit before cloning.
+
 Landmarks stay procedural, because no kit contains them and each one identifies
 its district: the command center and its video wall, the flood gates and water
 surface, the wind turbines, the civic dome and colonnade, the hospital roof
@@ -34,6 +49,17 @@ plant, the industrial chimneys and the solar field. `block()` and `tree()` are
 the only generic-architecture factories in `civic-model.js`, so swapping their
 implementations replaces every generic building and tree in the city while every
 landmark, platform, road and story prop keeps its exact position.
+
+`block()` fills its rectangle plot by plot rather than dropping one slab. An even
+grid of same-sized buildings is what makes a city read as a toy, so each plot
+varies its height, plan size, colour variant, rotation and offset, a share of
+plots are left open and planted instead, and a few take a tower so the skyline is
+not one flat line. Detailed models are spent on part of the plots and the rest
+draw from the low-detail stock, which averages 164 triangles against 1,089, so a
+denser city does not cost proportionally more to draw. Districts also plant their
+platform margin, which was otherwise bare lawn, and the road corridors carry
+lamps, signals, signs, skips and parked cars: they had nothing but paint before,
+which was most of why the city read as a model rather than a place.
 
 ## Story and interaction
 
@@ -64,15 +90,15 @@ working, since a raycast still reaches a district's `userData.asset` walking up
 from an instance. If the kit cannot be fetched, `createCivicCity()` falls back to
 the procedural slabs rather than dropping the page to the static preview.
 
-Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled static model preview with the complete text story. `npm run poster` renders that preview from the real scene at the IoT chapter with a software rasteriser (`scripts/render-poster.mjs`), sampling the same atlas pixels and material colours the browser samples, so the preview cannot drift from the scene. It has no shadows and no ambient occlusion, so it reads flatter than the GPU render.
+Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled static model preview with the complete text story. `npm run poster` renders that preview from the real scene at the IoT chapter with a software rasteriser (`scripts/render-poster.mjs`), sampling the same atlas pixels and material colours the browser samples, so the preview cannot drift from the scene. It casts shadows through a software shadow map of its own, but has no ambient occlusion and no environment reflections, so it still reads flatter than the GPU render.
 
 ## Verification
 
 - Production build for all three page entries.
 - `node tests/civic-motion.test.mjs`: vehicles and rotors move; equal timestamps preserve ambient poses; connection reveal progresses; water and gates reverse; mock forecast values match; geometry counts remain stable through every chapter. This runs the procedural fallback, since it builds the city with no kit.
 - `node tests/kenney-city.test.mjs`: every kit model loads and reports a finite extent with no tangent attribute; the city builds with the kit; rotors, the eight vehicles, the flood gates and the water surface all survive the swap; every district keeps its location and clickable group; kit buildings land inside districts; geometry counts stay stable through every chapter.
-- With the kit: 576 meshes, 652 instances, 81,335 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city is the lighter of the two, because it replaces the procedural slabs and trees rather than adding to them.
+- With the kit: 618 meshes, 874 instances, 158,866 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city carries half again the triangles of the procedural one but a third of the meshes, which is the trade that buys the density.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
-- Offline poster render inspected. GPU appearance, shadow quality, ambient occlusion and frame rate remain unverified: this environment has no WebGL, so nothing here has been seen through the real renderer.
+- Offline poster render inspected. GPU appearance, shadow quality, ambient occlusion and frame rate remain unverified: this environment has no WebGL, so nothing here has been seen through the real renderer. The poster's own shadows come from its software shadow map, not from the renderer the page uses.
 
 The existing Smart Building/AIS pages retain their entry points. Unpublished `/smart-city` draft files are not part of this route.
