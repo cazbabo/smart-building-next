@@ -21,8 +21,12 @@ const BACKGROUND = [250, 248, 252];                       // #FAF8FC, the page c
 const SUN = new T.Vector3(-45, 85, 35).normalize();
 const SKY = [255, 250, 255], GROUND = [138, 121, 151];
 
-const kit = await loadKenneyKit(ORIGIN);
-if (!kit) throw new Error('kit failed to load');
+// POSTER_KIT=0 renders the procedural fallback instead, which is what the page
+// draws if the kit cannot be fetched. Useful for telling the two apart.
+const useKit = process.env.POSTER_KIT !== '0';
+const output = process.env.POSTER_OUT ?? 'public/city-intelligence-civic.png';
+const kit = useKit ? await loadKenneyKit(ORIGIN) : null;
+if (useKit && !kit) throw new Error('kit failed to load');
 
 // Pair each kit material with the atlas pixels its models sample.
 const atlases = new Map();
@@ -30,7 +34,7 @@ for (const name of ['commercial', 'suburban', 'roads', 'cars']) {
  atlases.set(name, decodePng(fs.readFileSync(`public/models/${name}/Textures/colormap.png`)));
 }
 const materialAtlas = new Map();
-for (const key of ['towers', 'blocks', 'houses', 'trees', 'street', 'cars']) {
+for (const key of kit ? ['towers', 'blocks', 'houses', 'trees', 'street', 'cars'] : []) {
  for (const model of kit.group(key)) materialAtlas.set(model.material, atlases.get(model.name.split('/')[0]));
 }
 
@@ -161,6 +165,5 @@ for (const object of queue) {
  }
 }
 
-fs.writeFileSync('public/city-intelligence-civic.png', encodePng({width: WIDTH, height: HEIGHT, rgba: pixels}));
-const size = fs.statSync('public/city-intelligence-civic.png').size;
-console.log(`poster: ${drawn} triangles -> public/city-intelligence-civic.png (${(size / 1024).toFixed(0)} KB)`);
+fs.writeFileSync(output, encodePng({width: WIDTH, height: HEIGHT, rgba: pixels}));
+console.log(`poster (${useKit ? 'kit' : 'procedural'}): ${drawn} triangles -> ${output} (${(fs.statSync(output).size / 1024).toFixed(0)} KB)`);
