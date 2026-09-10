@@ -86,6 +86,17 @@ type over its dark underside. A wide isometric city fills its frame instead, so
 the type is given its own ground by a wash rising from the bottom rather than by
 finding a dark part of the subject to sit on.
 
+Motes drift up through the opening in three layers of different size and speed.
+A still isometric city gives the eye no evidence that the scene has any air in
+it, which is most of what the reference had and this did not. They are tinted
+lime and orchid rather than white, because a white speck on a night sky is a
+star and the sky behind is already full of them; the site's own colours read as
+its data layer drifting over the city instead. They add light rather than paint
+over it, so they are kept small - a large one crossing a white roof blows out to
+a smudge. Each one fades in and out over its own climb, so none pops at the top
+of the band, and the whole set dims with the night layer: over the pale story
+the same specks would read as dust on the screen.
+
 ## Story and interaction
 
 Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
@@ -103,7 +114,7 @@ Ordinary vertical scrolling drives the active chapter and its progress. Each cha
 - Each section's parts arrive in the order they are read as it comes into view, and stay once revealed: fading back out on the way up would fight the reader. The readout animates on a change of chapter rather than on a change of text, since it rewrites its value every frame through flood and AI. Under reduced motion the hidden state is never applied, because the global rule kills transitions and text left at opacity 0 with nothing to run would never appear.
 - Ground paint - lane markings, crossings, pitch lines - receives shadow but casts none. It is thin enough that its own shadow lands inside the shadow bias, which shimmered once the camera started moving with the pointer.
 - Pause animation stops the ambient clock while preserving scroll-based scenario selection. Reduced motion applies immediate state changes without continuous animation.
-- Rendering is capped around 30 fps, stops in hidden tabs and when the canvas is outside the viewport. Geometry is created once, not per frame.
+- Rendering is capped around 30 fps, stops in hidden tabs and when the canvas is outside the viewport. Geometry is created once, not per frame. The motes are three `Points` clouds, three draw calls between them, and their buffers are rewritten in place rather than rebuilt.
 
 All values and device actions are illustrative. No live forecasting service, sensor connection or physical device control exists.
 
@@ -142,7 +153,7 @@ Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled st
 - `node tests/kenney-city.test.mjs`: every kit model loads and reports a finite extent with no tangent attribute; the city builds with the kit; rotors, the eight vehicles, the flood gates and the water surface all survive the swap; every district keeps its location and clickable group; kit buildings land inside districts; geometry counts stay stable through every chapter.
 - With the kit: 619 meshes, 875 instances, 160,502 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city carries half again the triangles of the procedural one but a third of the meshes, which is the trade that buys the density.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
-- Rendered in Chromium at 1600 by 900: WebGL initialises, the whole city sits in frame with nothing clipped, the narrative reads over it, and scrolling to the flood chapter drives both the scene and the readout. Frame rate stays unverified: this box has no GPU and Chromium falls back to SwiftShader.
+- Rendered in Chromium at 1600 by 900: WebGL initialises, the whole city sits in frame with nothing clipped, the narrative reads over it, and scrolling to the flood chapter drives both the scene and the readout. At the top the night layer is fully on and the motes drift over it; at the Data chapter the night reads 0 and no mote is on screen. Frame rate stays unverified: this box has no GPU and Chromium falls back to SwiftShader.
 - Offline poster render inspected. GPU appearance, shadow quality, ambient occlusion and frame rate remain unverified: this environment has no WebGL, so nothing here has been seen through the real renderer. The poster's own shadows come from its software shadow map, not from the renderer the page uses.
 
 The existing Smart Building/AIS pages retain their entry points. Unpublished `/smart-city` draft files are not part of this route.

@@ -6,7 +6,7 @@ import {loadKenneyKit} from './kenney-kit.js';
 export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  let renderer;
  try {renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}
- catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},home(){},focus(){}};}
+ catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},setCentred(){},setNight(){},home(){},focus(){}};}
  // The kit is the city's architecture; if it cannot be fetched the scene still
  // builds from procedural geometry rather than dropping to the static poster.
  const kit=await loadKenneyKit().catch(()=>null);
@@ -20,6 +20,71 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  // buys roughly half again the shadow resolution at the same map size.
  Object.assign(sun.shadow.camera,{left:-82,right:56,top:52,bottom:-52,near:1,far:220});sun.shadow.normalBias=.11;sun.shadow.bias=-.0003;scene.add(sun);
  const fill=new T.DirectionalLight(0xcdbcf5,.5);fill.position.set(55,35,-40);scene.add(fill);
+
+ // Motes drifting through the opening. A still isometric city gives the eye no
+ // evidence that the scene has any air in it, which is most of what made the
+ // reference hero feel like a place rather than a render. They belong to the
+ // dark opening alone: over the pale story the same specks read as dust on the
+ // screen, so they fade out with the night behind them.
+ const spark=(()=>{
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=32;
+  const ctx=canvas.getContext('2d'),grad=ctx.createRadialGradient(16,16,0,16,16,16);
+  grad.addColorStop(0,'#ffffff');grad.addColorStop(.3,'#ffffffbb');grad.addColorStop(1,'#ffffff00');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,32,32);
+  const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;return texture;
+ })();
+ const RISE=86,motes=[];
+ // Three layers rather than one: a single point size reads as a regular
+ // pattern, and depth is what makes the drift look like air moving. They are
+ // tinted rather than white because a white speck on a night sky is a star, and
+ // the sky behind is already full of them; lime and orchid are the site's own
+ // colours and read as its data layer drifting over the city.
+ // They add light rather than paint over it, so a large one crossing a white
+ // roof blows out to a smudge. More of them, smaller, keeps the presence and
+ // loses the smudge.
+ for(const [count,size,strength,speed,tint] of [
+  [74,5.4,.85,2.1,[.94,.42,.78]],  // orchid, nearest
+  [96,3.8,.52,1.5,[.78,1,.31]],    // lime
+  [112,2.4,.3,1,[.9,.86,1]],       // cool white, furthest
+ ]) {
+  const position=new Float32Array(count*3),colour=new Float32Array(count*3),seeds=[];
+  for(let i=0;i<count;i++) seeds.push({
+   x:-98+Math.random()*150,z:-64+Math.random()*128,y:Math.random()*RISE,
+   rise:speed*(.55+Math.random()*.9),phase:Math.random()*Math.PI*2,sway:1.5+Math.random()*3.6,
+  });
+  const geometry=new T.BufferGeometry();
+  geometry.setAttribute('position',new T.BufferAttribute(position,3));
+  geometry.setAttribute('color',new T.BufferAttribute(colour,3));
+  const cloud=new T.Points(geometry,new T.PointsMaterial({
+   map:spark,size,sizeAttenuation:false,vertexColors:true,transparent:true,
+   opacity:0,depthWrite:false,blending:T.AdditiveBlending,
+  }));
+  // They drift outside the city's own bounds, and the bounding sphere is never
+  // recomputed after the first frame, so culling would drop the whole layer.
+  cloud.frustumCulled=false;cloud.visible=false;scene.add(cloud);
+  motes.push({cloud,position,colour,seeds,strength,tint});
+ }
+ /** Drifts the motes and dims them to the night behind them. */
+ function drift(t){
+  for(const layer of motes) {
+   layer.cloud.material.opacity=layer.strength*night;
+   layer.cloud.visible=night>.02;
+   if(!layer.cloud.visible)continue;
+   for(const [i,s] of layer.seeds.entries()) {
+    const climb=(s.y+s.rise*t)%RISE;
+    layer.position[i*3]=s.x+Math.sin(t*.19+s.phase)*s.sway;
+    layer.position[i*3+1]=climb-4;
+    layer.position[i*3+2]=s.z+Math.cos(t*.15+s.phase*1.7)*s.sway*.7;
+    // Each one materialises and dissolves over its own climb, so nothing pops
+    // at the top of the band. Additive blending makes dimming the colour a
+    // fade, which is the only per-point fade a shared material allows.
+    const fade=Math.sin(Math.PI*climb/RISE)**.55;
+    layer.colour[i*3]=fade*layer.tint[0];layer.colour[i*3+1]=fade*layer.tint[1];layer.colour[i*3+2]=fade*layer.tint[2];
+   }
+   layer.cloud.geometry.attributes.position.needsUpdate=true;
+   layer.cloud.geometry.attributes.color.needsUpdate=true;
+  }
+ }
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
  renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.setClearColor(0xfaf8fc,0);
  const pmrem=new T.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.1).texture;scene.environmentIntensity=.42;room.dispose();pmrem.dispose();
@@ -49,7 +114,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  };
  const FIT=.79;                   // vertical extent as a share of the frame width
  const goal=new T.Vector3(),look=new T.Vector3();
- let centred=false,chapter='overview';
+ let centred=false,chapter='overview',night=0;
  let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12;
  // Pointer parallax. The camera swings a little around the city as the cursor
  // crosses the page, which is what gives a still isometric model any sense of
@@ -72,7 +137,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
     ||Math.abs(wantX-swingX)>1e-4||Math.abs(wantY-swingY)>1e-4;
    frame();
   }
-  city.update(time,dt||1/30,!moving);renderer.render(scene,camera);
+  city.update(time,dt||1/30,!moving);drift(time);renderer.render(scene,camera);
   onLabels?.(Object.fromEntries(Object.entries(city.locations).map(([id,at])=>{const p=new T.Vector3(...at);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
   if(moving||settling)invalidate();
  }
@@ -141,6 +206,9 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
    centred=value;bias=value?0:.12;
    if(value)aimAt('hero');else aimAt(chapter);
   },
+  // How much of the opening is still on screen, so the motes go with the night
+  // layer they drift against rather than switching off at a threshold.
+  setNight(value){const next=Math.max(0,Math.min(1,value));if(Math.abs(next-night)<.004)return;night=next;invalidate();},
   focus(id){const pos=city.locations[id];if(!pos)return;goalSpan=span=id==='command'?58:74;bias=explore?0:.12;goal.set(...pos);look.copy(goal);resize();controls.update();invalidate();}
  };
 }

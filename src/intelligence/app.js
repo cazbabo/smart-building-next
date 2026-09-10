@@ -35,7 +35,7 @@ function syncSection(){
  document.documentElement.style.setProperty('--hero',(1-Math.min(1,over*1.6)).toFixed(3));
  const opening=night>.5;
  document.body.dataset.stage=opening?'hero':'story';
- scene?.setCentred(opening);
+ scene?.setCentred(opening);scene?.setNight(night);
  const turned=chosen.id!==current;
  current=chosen.id;document.body.dataset.chapter=current;
  // The readout rewrites itself every frame during flood and AI, so it is the
