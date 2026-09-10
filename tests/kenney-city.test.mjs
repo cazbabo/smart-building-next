@@ -46,14 +46,17 @@ const baseline = survey();
 assert.ok(city.rotors.length > 0, 'wind turbines remain');
 assert.equal(city.vehicles.length, 14, 'ground loop keeps its eight cars and the expressway adds six');
 assert.equal(city.vehicles.filter(car => car.userData.route).length, 6, 'six cars run the expressway');
-// Expressway traffic must ride the deck, not the ground the loop uses.
-city.setStage('overview', 0);
-city.update(3, 0.03, true);
+// Expressway traffic climbs the ramps and crosses at height, so over one lap a
+// car has to reach the deck and come back down to the street.
 const elevated = city.vehicles.filter(car => car.userData.route);
-for (const car of elevated) assert.ok(car.position.y > 5, 'expressway car rides the deck');
-const before = elevated[0].position.clone();
-city.update(9, 0.03, true);
-assert.ok(!elevated[0].position.equals(before), 'expressway traffic moves');
+const heights = [];
+for (let step = 0; step <= 40; step++) {
+ city.update(step * 2, 0.03, true);
+ heights.push(elevated[0].position.y);
+}
+assert.ok(Math.max(...heights) > 7, `expressway reaches the deck (peak ${Math.max(...heights).toFixed(1)})`);
+assert.ok(Math.min(...heights) < 1.5, `expressway comes back to the street (low ${Math.min(...heights).toFixed(1)})`);
+for (const car of elevated) assert.ok(Number.isFinite(car.position.y), 'expressway car stays on its route');
 assert.ok(city.gates.length > 0, 'flood gates remain');
 assert.ok(city.waterSurface, 'flood water surface remains');
 for (const id of ['civic', 'hospital', 'school', 'water', 'industry', 'energy', 'transit', 'command']) {

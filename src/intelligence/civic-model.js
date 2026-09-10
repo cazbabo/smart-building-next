@@ -13,7 +13,26 @@ export function createCivicCity(kit=null){
  const placer=kit&&new KitPlacer(kit);
  // Route of the elevated expressway, its deck height and the width of one bay.
  // Declared here because both the structure and the traffic on it need them.
- const VIADUCT=[[14,-46],[14,-10],[-50,-10]],DECK=8.2,LANE=5.4;
+ // Both ends land on the ground inside the plate and ramp up, rather than being
+ // cut off at the edge. Kenney's ramp tile climbs 0.52 of a tile per tile, so the
+ // deck height is three of those exactly - the ramp then meets the deck with no
+ // step at the top and no lip at the bottom.
+ const VIADUCT=[[14,-32],[14,-10],[-32,-10]],LANE=5.4,RAMP=3*LANE,DECK=3*.52*LANE;
+ const legList=VIADUCT.slice(0,-1).map(([ax,az],i)=>{
+  const [bx,bz]=VIADUCT[i+1];
+  return {ax,az,dx:bx-ax,dz:bz-az,span:Math.hypot(bx-ax,bz-az),turn:Math.atan2(bx-ax,bz-az)};
+ });
+ const routeLength=legList.reduce((sum,leg)=>sum+leg.span,0);
+ // Height at a distance along the route: up one ramp, flat, down the other.
+ const deckAt=s=>DECK*Math.max(0,Math.min(1,Math.min(s,routeLength-s)/RAMP));
+ const pointAt=s=>{
+  let d=Math.max(0,Math.min(routeLength,s));
+  for(const leg of legList){
+   if(d>leg.span&&leg!==legList[legList.length-1]){d-=leg.span;continue;}
+   const t=Math.min(1,d/leg.span);
+   return [leg.ax+leg.dx*t,leg.az+leg.dz*t,leg.turn,leg.dx/leg.span,leg.dz/leg.span];
+  }
+ };
  // Architecture uses real building materials. Lime and orchid are the site's
  // identity and stay on the layer that carries it - data routes, forecast
  // overlays and the command center's screens - so the city itself is never
@@ -164,21 +183,16 @@ export function createCivicCity(kit=null){
  // rather than instances. civic-motion.js drives the group and expects the car
  // to face +X; kit cars are modelled nose-along -Z, hence the quarter turn.
  // Traffic on the expressway runs its own polyline; the rest keep the ground loop.
- const legs=VIADUCT.slice(0,-1).map(([ax,az],i)=>{
-  const [bx,bz]=VIADUCT[i+1];
-  return {ax,az,dx:bx-ax,dz:bz-az,span:Math.hypot(bx-ax,bz-az),turn:Math.atan2(bx-ax,bz-az)};
- });
- const total=legs.reduce((sum,leg)=>sum+leg.span,0);
+ // It rides the same height profile as the deck, so cars climb the ramps rather
+ // than appearing at altitude.
  const viaductRoute=(offset,reverse)=>u=>{
-  let d=((reverse?1-u:u)+offset)%1*total;
-  for(const leg of legs){
-   if(d>leg.span){d-=leg.span;continue;}
-   const t=d/leg.span,side=reverse?-1:1;
-   // Sit in a lane rather than on the centre line, and face the way of travel.
-   const nx=leg.dz/leg.span*side*LANE*.2,nz=-leg.dx/leg.span*side*LANE*.2;
-   return [leg.ax+leg.dx*t+nx,DECK+.55,leg.az+leg.dz*t+nz,leg.turn+(reverse?Math.PI:0)];
-  }
-  return [legs[0].ax,DECK+.55,legs[0].az,legs[0].turn];
+  const s=((reverse?1-u:u)+offset)%1*routeLength;
+  const [px,pz,,ux,uz]=pointAt(s);
+  const side=reverse?-1:1;
+  // Sit in a lane rather than on the centre line, and face the way of travel.
+  // A car's own forward is +X - that is what the ground loop drives - while a
+  // road tile's is +Z, so the two take different angles from the same heading.
+  return [px+uz*side*LANE*.2,deckAt(s)+.55,pz-ux*side*LANE*.2,Math.atan2(-uz*side,ux*side)];
  };
  for(let i=0;i<(placer?14:8);i++){
   const car=new T.Group();root.add(car);vehicles.push(car);
@@ -195,33 +209,35 @@ export function createCivicCity(kit=null){
  const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
  const warning=new T.Mesh(new T.OctahedronGeometry(.8),p.warning);warning.position.set(-2,6.5,24);overlays.add(warning);
  // An elevated expressway threading the city on piers. Nine platforms on a three
- // by three grid read as a diagram; a route that crosses the whole city at height,
- // turns a corner and runs off both edges is what makes it read as somewhere a
- // road passes through. It follows the existing corridors, so it clears every
- // building and its piers land on open ground.
+ // by three grid read as a diagram; a route that climbs off the street, crosses
+ // the city at height, turns a corner and comes back down is what makes it read
+ // as somewhere a road passes through. It follows the existing corridors, so it
+ // clears every building and its piers land on open ground.
  if(placer){
-  const deck=kit.get('roads/road-straight'),rail=kit.get('roads/road-straight-barrier');
-  const pier=kit.get('roads/bridge-pillar-wide'),junction=kit.get('roads/road-crossroad');
-  // The pier model is a slim 0.14 post; carried to deck height by uniform scale
-  // it would be a needle, so width and height are scaled apart.
-  const column=(px,pz)=>placer.place(pier,{owner:root,x:px,y:0,z:pz,scale:9,scaleY:DECK/pier.height});
-  let carried=0;
-  for(let leg=0;leg<VIADUCT.length-1;leg++){
-   const [ax,az]=VIADUCT[leg],[bx,bz]=VIADUCT[leg+1];
-   const dx=bx-ax,dz=bz-az,span=Math.hypot(dx,dz),turn=Math.atan2(dx,dz);
-   const tiles=Math.max(1,Math.round(span/LANE));
-   for(let i=0;i<tiles;i++){
-    const t=(i+.5)/tiles,px=ax+dx*t,pz=az+dz*t;
-    placer.place(deck,{owner:root,x:px,y:DECK,z:pz,scale:LANE,rotation:turn});
-    placer.place(rail,{owner:root,x:px,y:DECK,z:pz,scale:LANE,rotation:turn});
-    // Piers every third bay, and never out over the plate's edge lip.
-    if(carried++%3===0&&Math.abs(px)<44&&Math.abs(pz)<33)column(px,pz);
+  const flat=kit.get('roads/road-straight'),rail=kit.get('roads/road-straight-barrier');
+  const slope=kit.get('roads/road-slant-high'),slopeRail=kit.get('roads/road-slant-high-barrier');
+  const pier=kit.get('roads/bridge-pillar-wide');
+  const bays=Math.round(routeLength/LANE);
+  for(let i=0;i<bays;i++){
+   const s=(i+.5)*routeLength/bays;
+   const [px,pz,turn]=pointAt(s);
+   const low=deckAt(s-LANE/2),high=deckAt(s+LANE/2);
+   if(Math.abs(high-low)<.01){
+    placer.place(flat,{owner:root,x:px,y:low,z:pz,scale:LANE,rotation:turn});
+    placer.place(rail,{owner:root,x:px,y:low,z:pz,scale:LANE,rotation:turn});
+   }else{
+    // The ramp tile's high edge sits on its local -Z, so it faces uphill only
+    // when turned to put that edge in the direction of the climb.
+    const uphill=high>low?turn+Math.PI:turn;
+    placer.place(slope,{owner:root,x:px,y:Math.min(low,high),z:pz,scale:LANE,rotation:uphill});
+    placer.place(slopeRail,{owner:root,x:px,y:Math.min(low,high),z:pz,scale:LANE,rotation:uphill});
    }
+   // Piers carry the deck only where it is genuinely off the ground. Width and
+   // height are scaled apart: the model is a slim 0.14 post and a uniform scale
+   // to deck height would leave a needle, which made the deck look unsupported.
+   if(i%3===1&&low>DECK*.55)
+    placer.place(pier,{owner:root,x:px,y:0,z:pz,scale:9,scaleY:low/pier.height});
   }
-  // Square the corner with a junction tile and carry it on its own pier.
-  const [cx,,cz]=[VIADUCT[1][0],0,VIADUCT[1][1]];
-  placer.place(junction,{owner:root,x:cx,y:DECK,z:cz,scale:LANE});
-  column(cx,cz);
   // A roundabout where two ground streets meet, so the grid has one junction
   // that is not another right angle.
   placer.place(kit.get('roads/road-roundabout'),{owner:root,x:-17,y:.06,z:13,scale:LANE*.92,rotation:0});

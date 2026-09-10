@@ -16,7 +16,10 @@ serveDirectory(ORIGIN, 'public/models', fs, path);
 const {loadKenneyKit} = await import('../src/intelligence/kenney-kit.js');
 const {createCivicCity} = await import('../src/intelligence/civic-model.js');
 
-const WIDTH = 1600, HEIGHT = 1200, SPAN = 145, SHADOW = 2048;
+const WIDTH = 1600, HEIGHT = 1200, SHADOW = 2048;
+// POSTER_SPAN / POSTER_TARGET frame a detail instead of the whole city.
+const SPAN = Number(process.env.POSTER_SPAN ?? 145);
+const TARGET = (process.env.POSTER_TARGET ?? '-15,4,0').split(',').map(Number);
 const BACKGROUND = [250, 248, 252];                       // #FAF8FC, the page canvas
 // Matches the rig in civic-scene.js: a low hemisphere so the key light carries
 // the form, plus a cool fill that keeps the shaded faces readable.
@@ -180,7 +183,7 @@ function litFraction(wx, wy, wz) {
 
 // ---- colour pass ------------------------------------------------------------
 const camera = new T.OrthographicCamera(-SPAN / 2, SPAN / 2, SPAN / 2 * HEIGHT / WIDTH, -SPAN / 2 * HEIGHT / WIDTH, 0.1, 400);
-const target = new T.Vector3(-15, 4, 0);
+const target = new T.Vector3(...TARGET);
 camera.position.copy(target).add(new T.Vector3(102, 100, 102));
 camera.lookAt(target);
 camera.updateMatrixWorld(true);

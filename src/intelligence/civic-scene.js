@@ -46,7 +46,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   const horizontal=Math.max(span,minHeight*w/h);
   camera.left=-horizontal/2;camera.right=horizontal/2;camera.top=horizontal/2*h/w;camera.bottom=-camera.top;camera.updateProjectionMatrix();invalidate();
  }
- function home(){span=145;minHeight=92;controls.target.set(-15,4,0);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();}
+ function home(){span=108;minHeight=84;controls.target.set(-13,1,2);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();}
  new ResizeObserver(resize).observe(host);
  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;last=0;invalidate();}).observe(host);
  controls.addEventListener('change',invalidate);
@@ -61,6 +61,6 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   setStage(id,progress=0){city.setStage(id,progress);invalidate();},
   setPaused(value){paused=value;last=0;invalidate();},
   setExplore(value){explore=value;controls.enabled=value;},home,
-  focus(id){const pos=city.locations[id];if(!pos)return;span=id==='command'?75:95;minHeight=span*.65;controls.target.set(...pos);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();invalidate();}
+  focus(id){const pos=city.locations[id];if(!pos)return;span=id==='command'?58:74;minHeight=span*.7;controls.target.set(...pos);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();invalidate();}
  };
 }

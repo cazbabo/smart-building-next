@@ -8,3 +8,67 @@
 @media(max-width:1100px){.scene-readout{padding:14px 16px}.scene-readout strong{font-size:21px}.scene-readout p{font-size:11px}.view-controls button{padding:9px 11px}.narrative-column{padding-left:2vw}.map-names span{font-size:10px}.view-note{font-size:10px}}
 @media(max-width:800px){.scene-readout{display:none}.site-header nav a{padding:7px 9px}.site-header nav{gap:4px}.brand svg{width:27px}.visual-column{height:460px}.city-view{min-height:300px}}
 @media(prefers-reduced-motion:reduce){.activity-symbol i{animation:none}#motion-toggle{display:none}}
+
+/* The stage is the city. The readout, the heading and the controls float on top
+   of it rather than taking their own bands of height, which is what let the
+   canvas keep only a wide, short strip: the city is 99 units across and 76 tall,
+   so a 2.3:1 canvas had to zoom out to 152 units to fit its height, and the
+   model ended up small in the middle of the frame. Floating them also drops the
+   card edges between the visual and the narrative, so the two columns read as
+   one spread instead of two sections. */
+.visual-column{padding:0}
+.visual-stage{position:relative;display:block}
+.city-view{position:absolute;inset:0;min-height:0;background:none}
+.view-heading,.scene-readout,.view-controls,.view-note{position:absolute;z-index:3}
+.view-heading{top:0;left:0;right:0;padding:16px 26px;pointer-events:none}
+.scene-readout{left:26px;right:auto;width:min(520px,52%);bottom:88px;margin:0;background:#52205EE8;backdrop-filter:blur(14px);box-shadow:0 14px 40px #52205E1F}
+.view-controls{left:26px;bottom:22px;padding:0}
+.view-note{right:26px;bottom:24px;margin:0;max-width:34%;text-align:right}
+.narrative-column{padding-left:3vw}
+/* Explore takes the whole viewport, so the overlays move in with the padding. */
+.exploring .visual-column{padding:0}
+.exploring .view-heading{padding:18px 5vw}
+.exploring .view-controls{left:5vw}
+.exploring .view-note{right:5vw}
+@media(max-width:800px){
+ .visual-stage{height:100%}
+ .view-heading{padding:10px 14px}
+ .scene-readout{display:none}
+ .view-note{left:14px;right:14px;bottom:8px;max-width:none;text-align:left}
+}
+
+/* The narrative reads as text laid on the page, not as a panel beside the city.
+   Every card edge, rule and filled band in the right-hand column comes off, so
+   the only thing dividing the two halves is the whitespace between them, and the
+   type carries the hierarchy on its own. Larger with it: at this measure the old
+   sizes were set for a column half the visual weight of the model. */
+.story-section{border-bottom:0;padding:96px 0 88px}
+.story-points li{border-top:0;padding:14px 0}
+.phase-band{background:none;padding:0 0 0 15px;border-left:2px solid var(--lime);border-radius:0;margin-bottom:26px}
+#ai .phase-band{background:none;border-left-color:#F05BB5}
+.district-list button{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:13px 2px}
+.district-list button:hover{border-color:#C044D9;background:none}
+.takeaway{margin:32px 0}
+h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
+.section-phase{font-size:13px;margin-bottom:30px}
+.section-intro{font-size:21px;line-height:1.72;max-width:34ch;margin-bottom:34px}
+.story-points h2{font-size:18px;margin-bottom:8px}
+.story-points p{font-size:16px;line-height:1.7}
+.story-points li>span{font-size:12px;padding-top:6px}
+.takeaway{font-size:17px;line-height:1.75}
+.next-section{font-size:14px;margin-top:34px}
+.district-list button{font-size:14px}
+/* The readout sat across the full width and covered the near edge of the city. */
+.scene-readout{right:auto;width:min(520px,52%);bottom:92px}
+@media(max-width:1100px){
+ h1{font-size:clamp(32px,3.4vw,46px)}
+ .section-intro{font-size:18px}
+ .story-points p{font-size:15px}
+ .takeaway{font-size:15px}
+}
+@media(max-width:800px){
+ .story-section{padding:60px 0}
+ h1{font-size:38px}
+ .section-intro{font-size:18px;max-width:none}
+ .story-points p{font-size:15px}
+}
