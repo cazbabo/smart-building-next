@@ -29,8 +29,24 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  controls.minPolarAngle=Math.PI*.25;controls.maxPolarAngle=Math.PI*.37;controls.minAzimuthAngle=Math.PI*.19;controls.maxAzimuthAngle=Math.PI*.31;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const OFFSET=new T.Vector3(102,100,102),RIGHT=new T.Vector3(1,0,-1).normalize();
- const anchor=new T.Vector3();
- let width=0,height=0,scheduled=false,explore=false,span=145,minHeight=92,paused=false,last=0,time=0,visible=true,bias=.12;
+ // A frame per chapter. Every chapter used to look identical apart from the
+ // overlays laid on it, which gave the eye no reason to stay; the camera now
+ // moves to what the chapter is about. It eases on the change of chapter only
+ // and never follows the scroll, because a camera driven by the scrollbar is
+ // what makes this kind of page unreadable.
+ const FRAMES={
+  overview:  [-13, 1,  2, 104],
+  fragmented:[ -8, 1,  2,  94],   // in among the districts, before they connect
+  foundation:[-30, 6,  2, 108],   // the routes and the command center they run to
+  iot:       [ -4, 4,  2,  84],   // close enough for the sensor markers to read
+  flood:     [ -2, 3, 19,  70],   // the waterway the chapter is about
+  priorities:[ -6, 2,  6,  92],
+  ai:        [-24, 4,  8, 116],   // city and command center in one frame
+  roadmap:   [-13, 1,  2, 110],
+ };
+ const FIT=.79;                   // vertical extent as a share of the frame width
+ const goal=new T.Vector3(),look=new T.Vector3();
+ let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12;
  // Pointer parallax. The camera swings a little around the city as the cursor
  // crosses the page, which is what gives a still isometric model any sense of
  // depth. Explore drives the camera itself, so it opts out.
@@ -43,10 +59,14 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   last=now;if(moving)time+=dt;
   let settling=false;
   if(!explore&&!reduced.matches){
-   const ease=1-Math.exp(-6*(dt||1/30));
-   swingX+=(wantX-swingX)*ease;swingY+=(wantY-swingY)*ease;
-   settling=Math.abs(wantX-swingX)>1e-4||Math.abs(wantY-swingY)>1e-4;
-   aim();
+   const step=dt||1/30;
+   const glide=1-Math.exp(-2.6*step);
+   look.lerp(goal,glide);span+=(goalSpan-span)*glide;
+   const swing=1-Math.exp(-6*step);
+   swingX+=(wantX-swingX)*swing;swingY+=(wantY-swingY)*swing;
+   settling=look.distanceTo(goal)>.04||Math.abs(goalSpan-span)>.04
+    ||Math.abs(wantX-swingX)>1e-4||Math.abs(wantY-swingY)>1e-4;
+   frame();
   }
   city.update(time,dt||1/30,!moving);renderer.render(scene,camera);
   onLabels?.(Object.fromEntries(Object.entries(city.locations).map(([id,at])=>{const p=new T.Vector3(...at);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
@@ -56,18 +76,23 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  function resize(){
   const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;
   if(w!==width||h!==height){width=w;height=h;renderer.setSize(w,h);}
+  frame();invalidate();
+ }
+ /** Rebuilds the projection and seats the camera from the current framing. */
+ function frame(){
+  const w=width||host.clientWidth,h=height||host.clientHeight;if(!w||!h)return;
   // Fit both axes: landscape explore must not crop the city vertically.
-  const horizontal=Math.max(span,minHeight*w/h);
+  const horizontal=Math.max(span,span*FIT*w/h);
   camera.left=-horizontal/2;camera.right=horizontal/2;camera.top=horizontal/2*h/w;camera.bottom=-camera.top;
   // The narrative scrolls over the right of the same canvas, so the city is
   // pushed left of centre by that much of the frame and the text lands on empty
   // ground. Explore has no narrative over it and keeps the city centred.
   const shift=explore?0:horizontal*bias;
-  seat.copy(anchor).addScaledVector(RIGHT,shift);
-  lens.copy(anchor).sub(OFFSET).addScaledVector(RIGHT,shift);
+  lens.copy(look).addScaledVector(RIGHT,shift);
+  seat.copy(lens).add(OFFSET);
   controls.target.copy(lens);
   aim();
-  camera.updateProjectionMatrix();invalidate();
+  camera.updateProjectionMatrix();
  }
  /** Seats the camera, swung by the current parallax. */
  function aim(){
@@ -77,7 +102,14 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   camera.position.copy(lens).add(arm);
   camera.lookAt(lens);
  }
- function home(){span=104;minHeight=82;bias=.12;controls.target.set(-13,1,2);anchor.copy(controls.target).add(OFFSET);camera.position.copy(anchor);camera.lookAt(controls.target);resize();controls.update();}
+ function home(){bias=.12;aimAt('overview',true);controls.update();}
+ /** Points the camera at a chapter's frame; `now` snaps instead of gliding. */
+ function aimAt(id,now=false){
+  const [x,y,z,width]=FRAMES[id]??FRAMES.overview;
+  goal.set(x,y,z);goalSpan=width;
+  if(now||reduced.matches){look.copy(goal);span=goalSpan;}
+  resize();
+ }
  addEventListener('pointermove',e=>{
   if(explore||reduced.matches)return;
   wantX=(e.clientX/innerWidth)*2-1;wantY=(e.clientY/innerHeight)*2-1;
@@ -95,9 +127,9 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  });
  document.addEventListener('visibilitychange',()=>{last=0;invalidate();});reduced.addEventListener('change',()=>{last=0;invalidate();});home();onReady(true);invalidate();
  return {
-  setStage(id,progress=0){city.setStage(id,progress);invalidate();},
+  setStage(id,progress=0){city.setStage(id,progress);if(!explore)aimAt(id);invalidate();},
   setPaused(value){paused=value;last=0;invalidate();},
   setExplore(value){explore=value;controls.enabled=value;resize();},home,
-  focus(id){const pos=city.locations[id];if(!pos)return;span=id==='command'?58:74;minHeight=span*.7;bias=explore?0:.30;controls.target.set(...pos);anchor.copy(controls.target).add(OFFSET);camera.position.copy(anchor);camera.lookAt(controls.target);resize();controls.update();invalidate();}
+  focus(id){const pos=city.locations[id];if(!pos)return;goalSpan=span=id==='command'?58:74;bias=explore?0:.12;goal.set(...pos);look.copy(goal);resize();controls.update();invalidate();}
  };
 }

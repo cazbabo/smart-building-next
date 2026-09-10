@@ -70,7 +70,7 @@ it than without.
 
 Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
 
-Ordinary vertical scrolling drives the active chapter and its progress. The orthographic camera remains stable while reading. Explore enables intentional rotation and district focus. The canvas is resized only when its actual dimensions change.
+Ordinary vertical scrolling drives the active chapter and its progress. Each chapter has its own framing and the camera eases to it - the flood chapter comes down to the waterway, the AI chapter pulls back far enough to hold the city and the command center together - but it moves on the change of chapter only and never follows the scrollbar, which is what makes a page like this unreadable. Within a chapter the camera is stable while reading, apart from the pointer swing. Explore enables intentional rotation and district focus. The canvas is resized only when its actual dimensions change.
 
 - Ambient animation: vehicles follow the central road loop; turbine rotors turn.
 - The camera swings a little around the city as the pointer crosses the page, damped toward the cursor rather than tracking it directly. It is what gives a still isometric model any sense of depth. Explore drives the camera itself and opts out, as does reduced motion.
