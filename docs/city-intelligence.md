@@ -73,6 +73,7 @@ Eight real document sections: living city, fragmentation, Data Consolidation, Io
 Ordinary vertical scrolling drives the active chapter and its progress. The orthographic camera remains stable while reading. Explore enables intentional rotation and district focus. The canvas is resized only when its actual dimensions change.
 
 - Ambient animation: vehicles follow the central road loop; turbine rotors turn.
+- The camera swings a little around the city as the pointer crosses the page, damped toward the cursor rather than tracking it directly. It is what gives a still isometric model any sense of depth. Explore drives the camera itself and opts out, as does reduced motion.
 - Data phase: routes progressively connect seven districts to the command center, with moving lime/pink packets.
 - IoT phase: elevated sensor markers show covered locations.
 - Flood example: mock water level progresses from 1.20 to 1.60 m; the simulated water surface rises and gate panels lift. The UI and scene use the same telemetry function.

@@ -30,15 +30,27 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
  const OFFSET=new T.Vector3(102,100,102),RIGHT=new T.Vector3(1,0,-1).normalize();
  const anchor=new T.Vector3();
- let width=0,height=0,scheduled=false,explore=false,span=145,minHeight=92,paused=false,last=0,time=0,visible=true,bias=.2;
+ let width=0,height=0,scheduled=false,explore=false,span=145,minHeight=92,paused=false,last=0,time=0,visible=true,bias=.12;
+ // Pointer parallax. The camera swings a little around the city as the cursor
+ // crosses the page, which is what gives a still isometric model any sense of
+ // depth. Explore drives the camera itself, so it opts out.
+ const UP=new T.Vector3(0,1,0),seat=new T.Vector3(),lens=new T.Vector3();
+ let wantX=0,wantY=0,swingX=0,swingY=0;
  function draw(now){
   scheduled=false;if(document.hidden||!visible){last=0;return;}
   const moving=!paused&&!reduced.matches,dt=last?Math.min((now-last)/1000,.06):0;
   if(moving&&last&&now-last<32){invalidate();return;}
   last=now;if(moving)time+=dt;
+  let settling=false;
+  if(!explore&&!reduced.matches){
+   const ease=1-Math.exp(-6*(dt||1/30));
+   swingX+=(wantX-swingX)*ease;swingY+=(wantY-swingY)*ease;
+   settling=Math.abs(wantX-swingX)>1e-4||Math.abs(wantY-swingY)>1e-4;
+   aim();
+  }
   city.update(time,dt||1/30,!moving);renderer.render(scene,camera);
   onLabels?.(Object.fromEntries(['command','civic','water'].map(id=>{const p=new T.Vector3(...city.locations[id]);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
-  if(moving)invalidate();
+  if(moving||settling)invalidate();
  }
  function invalidate(){if(!scheduled&&!document.hidden&&visible){scheduled=true;requestAnimationFrame(draw);}}
  function resize(){
@@ -51,11 +63,27 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   // pushed left of centre by that much of the frame and the text lands on empty
   // ground. Explore has no narrative over it and keeps the city centred.
   const shift=explore?0:horizontal*bias;
-  camera.position.copy(anchor).addScaledVector(RIGHT,shift);
-  controls.target.copy(anchor).sub(OFFSET).addScaledVector(RIGHT,shift);
+  seat.copy(anchor).addScaledVector(RIGHT,shift);
+  lens.copy(anchor).sub(OFFSET).addScaledVector(RIGHT,shift);
+  controls.target.copy(lens);
+  aim();
   camera.updateProjectionMatrix();invalidate();
  }
+ /** Seats the camera, swung by the current parallax. */
+ function aim(){
+  if(explore)return;                       // OrbitControls owns the camera here
+  const arm=seat.clone().sub(lens).applyAxisAngle(UP,swingX*.075);
+  arm.y+=swingY*11;
+  camera.position.copy(lens).add(arm);
+  camera.lookAt(lens);
+ }
  function home(){span=104;minHeight=82;bias=.12;controls.target.set(-13,1,2);anchor.copy(controls.target).add(OFFSET);camera.position.copy(anchor);camera.lookAt(controls.target);resize();controls.update();}
+ addEventListener('pointermove',e=>{
+  if(explore||reduced.matches)return;
+  wantX=(e.clientX/innerWidth)*2-1;wantY=(e.clientY/innerHeight)*2-1;
+  invalidate();
+ },{passive:true});
+ addEventListener('pointerleave',()=>{wantX=0;wantY=0;invalidate();},{passive:true});
  new ResizeObserver(resize).observe(host);
  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;last=0;invalidate();}).observe(host);
  controls.addEventListener('change',invalidate);
