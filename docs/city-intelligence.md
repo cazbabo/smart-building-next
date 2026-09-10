@@ -1,37 +1,43 @@
-# City Intelligence
+# City Intelligence — civic city and long-form story
 
-Route: `/city-intelligence`. Generic, English-only, light isometric 3D scrollytelling.
+Route: `/city-intelligence`. English-only presentation for enterprise customers.
 
-## Approved direction
+## Current draft
 
-Based on the consolidated v1.2 master blueprint. White/off-white 60–70%; lime #C7FF3D for operational activity; orchid #C044D9 for intelligence; pink #F05BB5 for selected history/recommendations; deep plum #52205E for readable headings. Warning and critical are separate semantic colors.
+This revision follows the civic-city reference and the three-phase Data → IoT → AI reference. It replaces camera-driven, pinned chapter swapping with eight permanent sections in normal document flow. A stable city view remains beside the story on desktop. The model only rotates or focuses after an explicit Explore or district action.
 
-Desktop is the primary platform. The user confirmed a capable presentation machine. Manual scroll only; no autoplay or narration audio. Target sales narration approximately 6.5 minutes at presenter pace, not a forced timer.
+This revision has been built and checked locally. Publication was blocked by automatic approval review reporting a usage limit. It is not a verified live deployment.
 
-Eight chapters: Living City → Fragmentation → Connected Platform → Data Foundation → IoT → Five Use Cases → AI → Roadmap. Use cases: flood, traffic, air quality, energy, public safety. All use one persistent modular city. Asset cards explain data source, platform context and operational decision. Selecting a card focuses the associated 3D district.
+## Presentation
 
-## Implementation
+1. Different places, one connected city.
+2. Disconnected systems: a water warning and an exposed road.
+3. Phase 1 — consolidate existing data, establish locations and ownership.
+4. Phase 2 — fill information gaps with IoT observations.
+5. Flood example — detect, understand and coordinate.
+6. Apply the shared foundation across public services.
+7. Phase 3 — compare current conditions and an illustrative forecast; people review recommendations.
+8. A phased adoption roadmap.
 
-- Three.js procedural city, orthographic camera, fixed diagonal orientation.
-- Modular procedural geometry, with segmented curtain walls and separately dimmable districts.
-- Deterministic scene and mock data from normalized scroll; reverse scrolling restores state.
-- Camera pan/zoom interpolates over 55% of each chapter/use-case segment, with a short settling filter; reduced motion uses static camera presets. Canvas size only changes when the viewport changes.
-- Manual rotation limited to ±12° horizontally and ±5° vertically. Further scrolling or Return to story restores the guided camera.
-- Accessible HTML controls separate from canvas. Keyboard chapter navigation, native modal focus handling, reduced motion, fullscreen, loading progress.
-- Scene module lazy-loaded. Narrow screens skip all Three.js assets and show the full textual story. WebGL failure uses a lightweight vector-rendered 3D view; fatal scene errors show the textual story.
-- Render on state changes, suspend drawing in hidden tabs, cap device pixel ratio at 2 and preserve resolution and shadows through camera movement.
-- No real AI, live connections, device controls, customer branding, authentication or dashboard backend.
+All figures are mock observations. The flood example uses a 1.40 m illustrative threshold, a 1.60 m observation and an illustrative 1.90 m forecast. There is no actual forecasting service, live connection or device actuation.
 
-## Review notes
+## Model and interaction
 
-The city is procedural web geometry rather than a supplied GLB asset collection. Mobile uses a lightweight rendered city poster and the full chapter text. Review/Approve are disabled demonstration controls. Numerical performance on the user's GPU must be assessed on their device; the cloud visual browser may use the lightweight renderer.
+- `civic-model.js`: procedural Three.js civic administration, hospital, school, park, factory, renewable energy, transit terminal, flood gate, housing and command center. Includes windows, roofs, columns, dome, rooftop equipment, roads, crossings, vehicles, trees, solar panels, turbines and operator desks.
+- `civic-scene.js`: orthographic camera, WebGL materials and shadows, render on demand. Camera stays independent of scroll position. ResizeObserver changes the framebuffer only when the canvas dimensions change.
+- `app.js`: permanent story sections. One active chapter determines the relevant data/sensor/risk layers; scrolling does not remount the city, fade materials or move the camera.
+- Explicit Explore allows limited drag rotation and building selection. District details explain data source, platform behavior and the team's action. Reset and Escape restore the overview.
+- Three HTML labels project from model coordinates. They do not intercept mouse input.
+- Mobile and unavailable WebGL use an explicitly labeled static poster with the complete readable story. They do not pretend the poster is an interactive model.
+- Reduced-motion preferences disable smooth anchor scrolling. Native dialog, skip link, focus styles and fullscreen feedback are provided.
 
-Existing Smart Building pages remain separately accessible. Unpublished earlier `/smart-city` draft files are not part of this page's build or deployment.
+## Validation and limits
 
-## Readability refinement
+- Vite production build passes for all three existing page entries.
+- Geometry checks pass: 10 matching district/detail IDs, 961 meshes and 32,810 triangles; finite transforms and vertices.
+- All eight chapter states checked, including flood/AI risk visibility and restoration to overview.
+- Offline Three.js SVG render inspected and converted to the fallback poster. This vector render does not reproduce WebGL shadows and can have painter-order artifacts; it is not browser verification.
+- New scrolling, dialog behavior and WebGL appearance still require browser/device verification. The available remote browser could not reach the local dev server, and publication is blocked.
+- The model is a procedural interpretation of the reference, not an exact reconstruction or photorealistic asset pack.
 
-Use-case copy follows What happens → What you see → What the team does. Technical data-source explanations remain in detail dialogs. Facades use deeper blue-green glass, bronze fins, recessed entrances, entrance canopies and open roof terraces. Unselected districts retain most material contrast. No automatic one-frame quality downgrade.
-
-## Reference-inspired landscape revision
-
-The user's illustrated city reference supersedes the earlier uniform architecture. The model now combines curved teal towers, tapered blue towers with rounded rectangular sections, an aqua tower, cream/mint/peach residences, roof gardens, a turquoise garden pond, a pedestrian bridge, terraced waterfront building, marina boats and a faceted terrain base. Decorative SVG clouds drift slowly above the scene and pause in reduced-motion mode; they never intercept pointer input and fade during operational chapters. Simulation geometry, district IDs and operational colors remain separate from decorative architecture.
+The previous city scene modules remain in the repository but are not imported by this page. Existing Smart Building and AIS pages retain their entry points. Unpublished `/smart-city` draft files are outside this change.
