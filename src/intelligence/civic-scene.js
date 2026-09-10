@@ -49,7 +49,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
    aim();
   }
   city.update(time,dt||1/30,!moving);renderer.render(scene,camera);
-  onLabels?.(Object.fromEntries(['command','civic','water'].map(id=>{const p=new T.Vector3(...city.locations[id]);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
+  onLabels?.(Object.fromEntries(Object.entries(city.locations).map(([id,at])=>{const p=new T.Vector3(...at);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
   if(moving||settling)invalidate();
  }
  function invalidate(){if(!scheduled&&!document.hidden&&visible){scheduled=true;requestAnimationFrame(draw);}}
