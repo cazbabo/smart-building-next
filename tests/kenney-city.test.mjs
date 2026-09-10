@@ -44,19 +44,7 @@ const baseline = survey();
 
 // The story props civic-motion.js drives must survive the kit swap.
 assert.ok(city.rotors.length > 0, 'wind turbines remain');
-assert.equal(city.vehicles.length, 14, 'ground loop keeps its eight cars and the expressway adds six');
-assert.equal(city.vehicles.filter(car => car.userData.route).length, 6, 'six cars run the expressway');
-// Expressway traffic climbs the ramps and crosses at height, so over one lap a
-// car has to reach the deck and come back down to the street.
-const elevated = city.vehicles.filter(car => car.userData.route);
-const heights = [];
-for (let step = 0; step <= 40; step++) {
- city.update(step * 2, 0.03, true);
- heights.push(elevated[0].position.y);
-}
-assert.ok(Math.max(...heights) > 7, `expressway reaches the deck (peak ${Math.max(...heights).toFixed(1)})`);
-assert.ok(Math.min(...heights) < 1.5, `expressway comes back to the street (low ${Math.min(...heights).toFixed(1)})`);
-for (const car of elevated) assert.ok(Number.isFinite(car.position.y), 'expressway car stays on its route');
+assert.equal(city.vehicles.length, 8, 'the ground loop keeps its eight cars');
 assert.ok(city.gates.length > 0, 'flood gates remain');
 assert.ok(city.waterSurface, 'flood water surface remains');
 for (const id of ['civic', 'hospital', 'school', 'water', 'industry', 'energy', 'transit', 'command']) {

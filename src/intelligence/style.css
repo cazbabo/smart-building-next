@@ -72,3 +72,25 @@ h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
  .section-intro{font-size:18px;max-width:none}
  .story-points p{font-size:15px}
 }
+
+/* One stage, not two columns. The canvas spans the full width and the narrative
+   scrolls over it with nothing behind the type, so the city carries on beneath
+   the words instead of stopping at a seam. The camera biases the city to the
+   left (see civic-scene.js) so the text lands on quiet ground rather than on the
+   districts. A faint scrim only under the text keeps it legible where a dark
+   roof or the command center's screen passes behind. */
+.experience-grid{display:grid;grid-template-columns:1fr;max-width:none}
+.visual-column,.narrative-column{grid-area:1/1}
+.narrative-column{position:relative;z-index:5;width:44%;margin-left:56%;padding:0 5vw 0 0;background:linear-gradient(90deg,#FAF8FC00,#FAF8FCD4 9%,#FAF8FCEE 24%)}
+.view-note{z-index:6}
+@media(max-width:1100px){
+ .narrative-column{width:50%;margin-left:50%;padding-right:4vw}
+}
+@media(max-width:800px){
+ .experience-grid{display:block}
+ .visual-column,.narrative-column{grid-area:auto}
+ .narrative-column{width:auto;margin-left:0;padding:0 26px;background:none}
+}
+/* Both sit under the narrative's scrim if left at the right edge. */
+#mode-label{margin-left:26px}
+.view-note{right:auto;left:260px;bottom:24px;max-width:44%;text-align:left}

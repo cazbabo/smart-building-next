@@ -28,7 +28,9 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  controls.enabled=false;controls.enableDamping=false;controls.enablePan=false;controls.enableZoom=false;
  controls.minPolarAngle=Math.PI*.25;controls.maxPolarAngle=Math.PI*.37;controls.minAzimuthAngle=Math.PI*.19;controls.maxAzimuthAngle=Math.PI*.31;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
- let width=0,height=0,scheduled=false,explore=false,span=145,minHeight=92,paused=false,last=0,time=0,visible=true;
+ const OFFSET=new T.Vector3(102,100,102),RIGHT=new T.Vector3(1,0,-1).normalize();
+ const anchor=new T.Vector3();
+ let width=0,height=0,scheduled=false,explore=false,span=145,minHeight=92,paused=false,last=0,time=0,visible=true,bias=.2;
  function draw(now){
   scheduled=false;if(document.hidden||!visible){last=0;return;}
   const moving=!paused&&!reduced.matches,dt=last?Math.min((now-last)/1000,.06):0;
@@ -44,9 +46,16 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   if(w!==width||h!==height){width=w;height=h;renderer.setSize(w,h);}
   // Fit both axes: landscape explore must not crop the city vertically.
   const horizontal=Math.max(span,minHeight*w/h);
-  camera.left=-horizontal/2;camera.right=horizontal/2;camera.top=horizontal/2*h/w;camera.bottom=-camera.top;camera.updateProjectionMatrix();invalidate();
+  camera.left=-horizontal/2;camera.right=horizontal/2;camera.top=horizontal/2*h/w;camera.bottom=-camera.top;
+  // The narrative scrolls over the right of the same canvas, so the city is
+  // pushed left of centre by that much of the frame and the text lands on empty
+  // ground. Explore has no narrative over it and keeps the city centred.
+  const shift=explore?0:horizontal*bias;
+  camera.position.copy(anchor).addScaledVector(RIGHT,shift);
+  controls.target.copy(anchor).sub(OFFSET).addScaledVector(RIGHT,shift);
+  camera.updateProjectionMatrix();invalidate();
  }
- function home(){span=108;minHeight=84;controls.target.set(-13,1,2);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();}
+ function home(){span=104;minHeight=82;bias=.12;controls.target.set(-13,1,2);anchor.copy(controls.target).add(OFFSET);camera.position.copy(anchor);camera.lookAt(controls.target);resize();controls.update();}
  new ResizeObserver(resize).observe(host);
  new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;last=0;invalidate();}).observe(host);
  controls.addEventListener('change',invalidate);
@@ -60,7 +69,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  return {
   setStage(id,progress=0){city.setStage(id,progress);invalidate();},
   setPaused(value){paused=value;last=0;invalidate();},
-  setExplore(value){explore=value;controls.enabled=value;},home,
-  focus(id){const pos=city.locations[id];if(!pos)return;span=id==='command'?58:74;minHeight=span*.7;controls.target.set(...pos);camera.position.copy(controls.target).add(new T.Vector3(102,100,102));camera.lookAt(controls.target);resize();controls.update();invalidate();}
+  setExplore(value){explore=value;controls.enabled=value;resize();},home,
+  focus(id){const pos=city.locations[id];if(!pos)return;span=id==='command'?58:74;minHeight=span*.7;bias=explore?0:.30;controls.target.set(...pos);anchor.copy(controls.target).add(OFFSET);camera.position.copy(anchor);camera.lookAt(controls.target);resize();controls.update();invalidate();}
  };
 }
