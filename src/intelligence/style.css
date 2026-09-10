@@ -94,3 +94,25 @@ h1{font-size:clamp(40px,3.7vw,66px);margin-bottom:30px}
 /* Both sit under the narrative's scrim if left at the right edge. */
 #mode-label{margin-left:26px}
 .view-note{right:auto;left:260px;bottom:24px;max-width:44%;text-align:left}
+
+/* Scroll motion. The story had none: sections scrolled in flat and the readout
+   cut from one chapter to the next. Each section's parts now arrive in the order
+   they are read, and the readout marks a chapter change rather than every value
+   it prints. Reduced motion gets the finished state, which is why the hidden
+   state is scoped to a class the observer adds rather than being the default -
+   the global reduced-motion rule kills transitions, and text left at opacity 0
+   with no transition to run would never appear at all. */
+.story-section>*{opacity:0;transform:translateY(20px);
+ transition:opacity .66s cubic-bezier(.22,.68,.28,1),transform .66s cubic-bezier(.22,.68,.28,1)}
+.story-section.revealed>*{opacity:1;transform:none}
+.story-section.revealed>*:nth-child(2){transition-delay:.07s}
+.story-section.revealed>*:nth-child(3){transition-delay:.13s}
+.story-section.revealed>*:nth-child(4){transition-delay:.19s}
+.story-section.revealed>*:nth-child(5){transition-delay:.24s}
+.story-section.revealed>*:nth-child(6){transition-delay:.29s}
+.story-section.revealed>*:nth-child(n+7){transition-delay:.33s}
+.scene-readout.turned>div:first-child{animation:readout-turn .5s cubic-bezier(.22,.68,.28,1)}
+@keyframes readout-turn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+ .story-section>*{opacity:1;transform:none}
+}

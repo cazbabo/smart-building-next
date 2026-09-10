@@ -80,6 +80,8 @@ Ordinary vertical scrolling drives the active chapter and its progress. The orth
 - Flood example: mock water level progresses from 1.20 to 1.60 m; the simulated water surface rises and gate panels lift. The UI and scene use the same telemetry function.
 - AI phase: a pink footprint expands alongside an illustrative 1.60 to 1.90 m forecast. A ring pulses over the command center while it works, and larger pink beads run the connection routes the other way, so the chapter shows the recommendation going back out to the districts rather than only the readings arriving. Both appear in this chapter alone.
 - Reverse scrolling restores the corresponding scenario state.
+- Each section's parts arrive in the order they are read as it comes into view, and stay once revealed: fading back out on the way up would fight the reader. The readout animates on a change of chapter rather than on a change of text, since it rewrites its value every frame through flood and AI. Under reduced motion the hidden state is never applied, because the global rule kills transitions and text left at opacity 0 with nothing to run would never appear.
+- Ground paint - lane markings, crossings, pitch lines - receives shadow but casts none. It is thin enough that its own shadow lands inside the shadow bias, which shimmered once the camera started moving with the pointer.
 - Pause animation stops the ambient clock while preserving scroll-based scenario selection. Reduced motion applies immediate state changes without continuous animation.
 - Rendering is capped around 30 fps, stops in hidden tabs and when the canvas is outside the viewport. Geometry is created once, not per frame.
 

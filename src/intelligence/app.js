@@ -26,7 +26,11 @@ function syncSection(){
  let chosen=elements[0];const line=innerHeight*.40;
  for(const el of elements){if(el.getBoundingClientRect().top<=line)chosen=el;else break;}
  const rect=chosen.getBoundingClientRect();chapterProgress=Math.max(0,Math.min(1,(line-rect.top)/rect.height));
+ const turned=chosen.id!==current;
  current=chosen.id;document.body.dataset.chapter=current;
+ // The readout rewrites itself every frame during flood and AI, so it is the
+ // change of chapter that animates, not the change of text.
+ if(turned){const box=$('.scene-readout');box.classList.remove('turned');void box.offsetWidth;box.classList.add('turned');}
  const s=sections.find(x=>x.id===current),a=activity[current],data=storyTelemetry(current,chapterProgress);
  $('#view-title').textContent=s.phase;$('#activity-label').textContent=a[0];
  $('#activity-value').textContent=current==='flood'?`${data.level.toFixed(2)} m`:current==='ai'?`1.60 m → ${data.forecast.toFixed(2)} m`:a[1];
@@ -35,6 +39,14 @@ function syncSection(){
  document.querySelectorAll('.site-header nav a').forEach(a=>a.setAttribute('aria-current',a.hash===`#${current}`?'step':'false'));
 }
 
+// Sections arrive rather than appear. Once revealed they stay revealed: a
+// section that faded out again on the way back up would fight the reader.
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+ const revealer=new IntersectionObserver(entries=>{
+  for(const entry of entries)if(entry.isIntersecting){entry.target.classList.add('revealed');revealer.unobserve(entry.target);}
+ },{rootMargin:'-10% 0px -18% 0px'});
+ for(const el of elements)revealer.observe(el);
+}else for(const el of elements)el.classList.add('revealed');
 let pending=false;addEventListener('scroll',()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;syncSection();});}},{passive:true});addEventListener('resize',syncSection);
 // The model carries a label per district. Ten of them will not all fit at every
 // camera angle, so they are placed in order of importance and any that would

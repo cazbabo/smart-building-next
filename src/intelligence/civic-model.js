@@ -137,7 +137,13 @@ export function createCivicCity(kit=null){
  box(hospital,.45,2,.12,5,6.8,5.68,p.orchid);box(hospital,1.7,.45,.14,5,6.8,5.7,p.orchid);
  locations.hospital=[29,10,1];
  const school=district('school',29,24,24,17,'Education');block(school,10,4,2,-4,-4,p.white);roof(school,11,5,-4,6.0,-4);block(school,5,7,2,7,-1,p.white);roof(school,6,8,7,6.0,-1);
- const track=cylinder(school,5.4,.10,-3,.62,3,p.roof,48);track.scale.z=.65;const field=cylinder(school,4.3,.12,-3,.69,3,p.grass,48);field.scale.z=.65;box(school,6.8,.02,.045,-3,.77,3,p.white);box(school,.045,.02,4,-3,.77,3,p.white);for(const x of [-6.5,.5]){box(school,.07,1.2,1.8,x,1.35,3,p.white);box(school,.7,.07,1.8,x,1.95,3,p.white);}grove(school,-10,-6,8,'z');
+ // The track, the infield and its markings are stacked, not interpenetrating:
+ // they used to share a slice of height, and the markings sat .02 above the
+ // infield, which is inside the shadow normal bias and made the whole ellipse
+ // flicker as the camera moved. Paint on the ground casts nothing.
+ const track=cylinder(school,5.4,.10,-3,.62,3,p.roof,48);track.scale.z=.65;track.castShadow=false;
+ const field=cylinder(school,4.3,.08,-3,.71,3,p.grass,48);field.scale.z=.65;field.castShadow=false;
+ for(const mark of [box(school,6.8,.05,.045,-3,.79,3,p.white),box(school,.045,.05,4,-3,.79,3,p.white)])mark.castShadow=false;for(const x of [-6.5,.5]){box(school,.07,1.2,1.8,x,1.35,3,p.white);box(school,.7,.07,1.8,x,1.95,3,p.white);}grove(school,-10,-6,8,'z');
  const transit=district('transit',-30,1,22,18,'Transport');path(transit,19,14,0,0);box(transit,13,.3,5,0,3.4,-2,p.blue);for(const x of [-5,0,5])box(transit,.18,3,.18,x,1.9,-2,p.white);box(transit,11,2.2,2,0,1.65,-5,p.white);windows(transit,11,2,1,0,-5);
  function bus(g,x,z){box(g,5,1.5,1.6,x,1.25,z,p.blue);box(g,4.1,.7,1.65,x,1.6,z,p.glass);box(g,5,.14,1.6,x,2.07,z,p.white);for(const dx of [-1.6,1.6])for(const dz of [-.8,.8]){const wheel=cylinder(g,.32,.15,x+dx,.65,z+dz,p.deep,10);wheel.rotation.x=Math.PI/2;}}
  bus(transit,-3,2);bus(transit,4,5);grove(transit,-9,-6,7,'z');
@@ -205,6 +211,12 @@ export function createCivicCity(kit=null){
    kerb([x,rz,9],x,rz+side*1.6,side>0?Math.PI:0);
   }
  }
+ // Ground paint - lane markings, crossings, pitch lines - is thin enough that
+ // its own shadow falls inside the shadow bias and shimmers as the camera
+ // moves. Anything flat and broad only receives shadow; it casts none.
+ root.traverse(o=>{
+  if(o.isMesh&&!o.isInstancedMesh&&o.scale.y<.12&&Math.max(o.scale.x,o.scale.z)>.5)o.castShadow=false;
+ });
  placer?.build();
  const motion=createCivicMotion({root,locations,rotors,vehicles,waterSurface,gates,risk,warning});
  motion.setStage('overview');motion.update(0,0,true);root.updateMatrixWorld(true);
