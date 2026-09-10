@@ -19,5 +19,25 @@ assert.ok(Math.abs(storyTelemetry('ai',1).forecast-1.9)<1e-10);
 city.setStage('flood',0);city.update(4,.03,true);assert.equal(city.waterSurface.position.y,low);assert.equal(city.gates[0].position.y,1.5);
 for(const id of ['overview','fragmented','foundation','iot','flood','priorities','ai','roadmap'])for(const p of [0,.5,1]){city.setStage(id,p);city.update(7,.03,true);}
 assert.deepEqual(counts(),baseline);
+
+// The AI chapter has to show the answer coming back, not only the readings going in.
+city.setStage('ai',1);city.update(2,.03,true);
+const advising=city.motion.advice.map(a=>a.mesh.position.clone());
+assert.ok(city.motion.think.visible,'processing ring shows in the AI chapter');
+assert.ok(city.motion.advice.every(a=>a.mesh.visible),'advice runs in the AI chapter');
+city.update(5,.03,true);
+assert.ok(city.motion.advice.some((a,i)=>!a.mesh.position.equals(advising[i])),'advice moves');
+// It runs the other way to the readings: toward the districts, away from the hub.
+const hub=city.locations.command;
+const near=p=>Math.hypot(p.x-hub[0],p.z-hub[2]);
+city.setStage('ai',1);city.update(0,.03,true);
+const first=city.motion.advice[0];
+const start=near(first.mesh.position.clone());
+city.update(1.2,.03,true);
+assert.ok(near(first.mesh.position)>start,'advice travels away from the command center');
+city.setStage('iot',1);city.update(2,.03,true);
+assert.ok(!city.motion.think.visible,'processing ring is only in the AI chapter');
+assert.ok(city.motion.advice.every(a=>!a.mesh.visible),'advice is only in the AI chapter');
+
 city.setStage('overview',0);city.update(7,.03,true);assert.equal(city.motion.flow.visible,false);
 console.log('PASS: ambient movement, pause determinism, progressive data, water/gate reversal, forecast consistency, stable geometry',baseline);

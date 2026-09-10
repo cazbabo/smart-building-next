@@ -5,7 +5,7 @@ const smooth = x => { const t = clamp(x); return t * t * (3 - 2 * t); };
 export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,gates,risk,warning}) {
  const flow = new T.Group(); flow.name = 'Connected data'; root.add(flow);
  const lime = new T.MeshBasicMaterial({color:'#C7FF3D'}),pink = new T.MeshBasicMaterial({color:'#F05BB5'});
- const channels=[],packets=[],beacons=[];
+ const channels=[],packets=[],beacons=[],advice=[];
  const bead = new T.SphereGeometry(.30,8,6);
  for(const [index,id] of ['civic','hospital','school','water','industry','energy','transit'].entries()) {
   const [x,y,z]=locations[id];
@@ -13,6 +13,10 @@ export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,g
   const geometry=new T.TubeGeometry(curve,60,.085,5,false);
   const line=new T.Mesh(geometry,new T.MeshBasicMaterial({color:index%3===0?'#F05BB5':'#C7FF3D',transparent:true,opacity:.65,depthWrite:false})); flow.add(line);channels.push(line);
   for(let j=0;j<3;j++){const mesh=new T.Mesh(bead,index%3===0?pink:lime);flow.add(mesh);packets.push({mesh,curve,offset:j/3+index*.07});}
+  // The AI chapter has to show the command center answering, not only that it
+  // was fed. Larger pink beads run the same routes the other way, so the
+  // recommendation is seen leaving for the districts that sent the readings.
+  for(let j=0;j<2;j++){const mesh=new T.Mesh(bead,pink);mesh.scale.setScalar(1.7);flow.add(mesh);advice.push({mesh,curve,offset:j/2+index*.13});}
  }
  const sensorLayer=new T.Group();sensorLayer.name='IoT coverage';root.add(sensorLayer);
  for(const [id,[x,y,z]] of Object.entries(locations)) {
@@ -22,6 +26,11 @@ export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,g
   const ring=new T.Mesh(new T.TorusGeometry(1.15,.055,5,32),lime);ring.rotation.x=Math.PI/2;marker.add(ring);
   beacons.push({marker,core,ring,base:y+2});
  }
+ // Something has to mark the processing itself, between the readings arriving
+ // and the advice going back out.
+ const [cx,cy,cz]=locations.command;
+ const think=new T.Mesh(new T.TorusGeometry(3.4,.17,8,44),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.9,depthWrite:false}));
+ think.rotation.x=Math.PI/2;think.position.set(cx,cy+2.4,cz);think.name='AI processing';root.add(think);
  let stage='overview',targetProgress=0,progress=0;
  function setStage(id,p=0){stage=id;targetProgress=clamp(p);}
  function update(time,dt=1/60,instant=false){
@@ -32,6 +41,14 @@ export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,g
   for(const line of channels)line.geometry.setDrawRange(0,Math.floor(line.geometry.index.count*strength/3)*3);
   for(const item of packets){const t=(time*.12+item.offset)%1;item.mesh.visible=t<=strength;item.mesh.position.copy(item.curve.getPointAt(t));}
   sensorLayer.visible=state.sensors;
+  // Advice only flows while the forecast chapter is on screen.
+  const advising=stage==='ai';
+  think.visible=advising;
+  if(advising){const pulse=1+Math.sin(time*2.1)*.11;think.scale.set(pulse,pulse,1);think.rotation.z=time*.5;}
+  for(const item of advice){
+   item.mesh.visible=advising;
+   if(advising)item.mesh.position.copy(item.curve.getPointAt(1-(time*.17+item.offset)%1));
+  }
   for(const [i,b] of beacons.entries()){b.marker.position.y=b.base+Math.sin(time*1.2+i)*.22;b.core.rotation.y=time*.35;b.ring.rotation.z=time*.2;}
   for(const [i,rotor] of rotors.entries())rotor.rotation.z=time*(.4+i*.06);
   for(const [i,car] of vehicles.entries()){const u=(time*(.022+(i%3)*.002)+i/vehicles.length)%1;
@@ -55,5 +72,5 @@ export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,g
   warning.position.y=6.5;warning.rotation.y=time*.35;
   return state;
  }
- return {setStage,update,channels,packets,beacons,flow};
+ return {setStage,update,channels,packets,beacons,advice,think,flow};
 }

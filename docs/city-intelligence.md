@@ -78,7 +78,7 @@ Ordinary vertical scrolling drives the active chapter and its progress. The orth
 - IoT phase: elevated sensor markers show covered locations.
 - Every district carries a label on the model, projected through the camera each frame. Ten will not all fit at every angle, so they are placed in order of importance and any that would land on one already down is dropped for that frame. The narrative scrolls above them, so a district on that side hangs its label to the left of its marker rather than centred, and only one that still cannot clear the text is hidden. Sizes are estimated from the text rather than measured, because reading layout back per frame would stall the render loop.
 - Flood example: mock water level progresses from 1.20 to 1.60 m; the simulated water surface rises and gate panels lift. The UI and scene use the same telemetry function.
-- AI phase: a pink footprint expands alongside an illustrative 1.60 to 1.90 m forecast.
+- AI phase: a pink footprint expands alongside an illustrative 1.60 to 1.90 m forecast. A ring pulses over the command center while it works, and larger pink beads run the connection routes the other way, so the chapter shows the recommendation going back out to the districts rather than only the readings arriving. Both appear in this chapter alone.
 - Reverse scrolling restores the corresponding scenario state.
 - Pause animation stops the ambient clock while preserving scroll-based scenario selection. Reduced motion applies immediate state changes without continuous animation.
 - Rendering is capped around 30 fps, stops in hidden tabs and when the canvas is outside the viewport. Geometry is created once, not per frame.
