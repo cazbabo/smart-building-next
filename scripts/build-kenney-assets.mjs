@@ -44,38 +44,31 @@ const ROSTER = {
  ],
 };
 
-// One atlas per kit means one colour scheme per kit, and a city where every
-// building shares a palette reads as a single model rather than a place. Each
-// kit therefore ships several atlases: the neutrals are identical across all of
-// them so the city stays coherent, while the accent hues are pulled toward a
-// different brand colour in each. Green and cyan are never re-aimed - they mark
-// planting and water, which carry meaning in the scene.
-const VARIANT_HUES = [null, 287, 250, 322, 215, 38];   // neutral, plum, periwinkle, rose, steel, sand
-const SEMANTIC = new Set([95, 188]);
-// A variant has to reach the building body, not just its trim: Kenney's
-// commercial stock is mostly grey, so re-aiming the accents alone leaves the
-// city monochrome. Variants therefore tint the neutrals too, hard enough to read
-// across a district but well short of a painted facade.
+// Lime and orchid are the site's identity - data routes, forecast overlays, the
+// interface - and the architecture is deliberately not part of that. Buildings
+// keep real material colour, so Kenney's own hues are left alone here; only the
+// most cartoon-saturated values are pulled back so the city sits on the pale
+// canvas without shouting.
+const SATURATION_CAP = 0.55;
 
-// Hue families of the site palette. Source hue picks the family; the atlas keeps
-// its own lightness so Kenney's baked shading and window detail survive.
-const FAMILIES = [
- {upTo: 10, hue: 322, sat: 0.30},   // true red   -> dusty rose (signs, sirens)
- {upTo: 50, hue: 38, sat: 0.32},    // orange     -> wood; Kenney paints trunks,
-                                    // roof tiles and terracotta at hue 15-20,
-                                    // so the red family has to stop short of it
- {upTo: 70, hue: 46, sat: 0.30},    // yellow     -> warm stone
- {upTo: 160, hue: 95, sat: 0.24},   // green      -> sage, keeps planting legible
- {upTo: 200, hue: 188, sat: 0.42},  // cyan       -> water
- {upTo: 255, hue: 250, sat: 0.26},  // blue       -> periwinkle
- {upTo: 300, hue: 287, sat: 0.34},  // purple     -> plum
- {upTo: 361, hue: 320, sat: 0.30},  // magenta    -> rose
+// A city where every wall is the same grey reads as one model. Each kit ships
+// several atlases whose walls take a different real building material; windows,
+// doors, roof tiles and planting keep Kenney's own colour in all of them, so the
+// variants change what a building is made of rather than repainting it.
+// `value` scales the wall's lightness. Kenney renders walls near white, and a
+// tint at that lightness is invisible, so a material that is genuinely darker in
+// life - brick, slate - has to bring the lightness down with it to read.
+const MATERIALS = [
+ null,                                    // as authored: concrete and render
+ {hue: 36, sat: 0.26, value: 0.94},       // warm stone
+ {hue: 15, sat: 0.42, value: 0.62},       // brick
+ {hue: 208, sat: 0.18, value: 0.74},      // slate
+ {hue: 86, sat: 0.16, value: 0.84},       // weathered stone
+ {hue: 30, sat: 0.34, value: 0.88},       // sandstone
 ];
-// Greys pick up a plum cast, but only as they get lighter: the palette's tinted
-// neutrals (stone #dcd4e5, white #f6f1fa) are all pale, and carrying the same
-// tint into mid and dark greys turns them muddy pink instead of lavender.
-const NEUTRAL_HUE = 283;
-const neutralSat = lightness => 0.012 + 0.085 * lightness ** 2;
+// Walls are the unsaturated part of the atlas; anything above this is trim the
+// variants must not touch.
+const WALL_SATURATION = 0.18;
 
 function toHsl(r, g, b) {
  r /= 255; g /= 255; b /= 255;
@@ -103,27 +96,18 @@ function toRgb(h, s, l) {
  return [f(h + 120), f(h), f(h - 120)].map(v => Math.max(0, Math.min(255, Math.round(v * 255))));
 }
 
-function recolour(image, dominant = null) {
+function recolour(image, material = null) {
  const {rgba} = image;
  for (let i = 0; i < rgba.length; i += 4) {
   if (rgba[i + 3] === 0) continue;
   const [h, s, l] = toHsl(rgba[i], rgba[i + 1], rgba[i + 2]);
-  const family = s >= 0.14 ? FAMILIES.find(f => h < f.upTo) : null;
-  const semantic = family && SEMANTIC.has(family.hue);
-  let hue, sat, lightness = l < 0.12 ? l + 0.05 : l;
-  if (dominant !== null && !semantic) {
-   // Keep a little internal spread so a building is not one flat colour.
-   hue = dominant + (family ? FAMILIES.indexOf(family) % 3 - 1 : 0) * 13;
-   sat = family ? Math.min(family.sat + 0.06, 0.3 + s * 0.4) : 0.3;
-   // Kenney's commercial stock is near-white, and a tint at that lightness is
-   // invisible. Compressing the range downward is what makes the variant read.
-   lightness = 0.26 + lightness * 0.58;
-  } else if (family) {
-   hue = family.hue;
-   sat = Math.min(family.sat, 0.25 + s * 0.45);
-  } else {
-   hue = NEUTRAL_HUE;
-   sat = Math.min(s, neutralSat(l));
+  let hue = h, sat = Math.min(s, SATURATION_CAP), lightness = l < 0.1 ? l + 0.04 : l;
+  if (material && s < WALL_SATURATION) {
+   // Wall. Carry the atlas's own shading through as lightness so the baked
+   // panel lines and storey shadows survive the change of material.
+   hue = material.hue;
+   sat = material.sat * (0.45 + 0.55 * l);
+   lightness = Math.min(0.97, l * material.value);
   }
   const [r, g, b] = toRgb(hue, sat, lightness);
   rgba[i] = r; rgba[i + 1] = g; rgba[i + 2] = b;
@@ -141,11 +125,11 @@ for (const [kit, names] of Object.entries(ROSTER)) {
   models++;
  }
  const source = fs.readFileSync(path.join(SOURCE, kit, 'Textures/colormap.png'));
- VARIANT_HUES.forEach((dominant, index) => {
+ MATERIALS.forEach((material, index) => {
   const name = index === 0 ? 'colormap.png' : `colormap-${index}.png`;
-  fs.writeFileSync(path.join(TARGET, kit, 'Textures', name), encodePng(recolour(decodePng(source), dominant)));
+  fs.writeFileSync(path.join(TARGET, kit, 'Textures', name), encodePng(recolour(decodePng(source), material)));
  });
 }
 const bytes = Object.entries(ROSTER).reduce((sum, [kit, names]) =>
  sum + names.reduce((n, name) => n + fs.statSync(path.join(TARGET, kit, `${name}.glb`)).size, 0), 0);
-console.log(`${models} models, ${(bytes / 1024 / 1024).toFixed(2)} MB, 4 atlases repainted -> ${TARGET}`);
+console.log(`${models} models, ${(bytes / 1024 / 1024).toFixed(2)} MB, ${MATERIALS.length} atlases per kit -> ${TARGET}`);

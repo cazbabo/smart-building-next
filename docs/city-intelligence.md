@@ -8,6 +8,7 @@ English-only enterprise presentation at `/city-intelligence`.
 - Lime `#C7FF3D`: connected data, primary controls and operational activity.
 - Orchid `#C044D9` and pink `#F05BB5`: intelligence, predictions and visual accents.
 - Trees, water and glazing retain material colors so the city stays legible.
+- Lime, orchid and pink are the site's identity, not the city's. They mark the data routes, the forecast overlays, the command center's screens and the interface. The architecture is never painted in them: buildings, planting, water and road surfaces use real material colour so the brand layer reads as information laid over a city rather than as the city itself.
 - Civic architecture uses rounded slabs, continuous glass, facade mullions, roof planting, colonnades and a dome. Hospital terraces include plant equipment. The scene includes a school, renewable district, industry, park, housing, transit and a command center.
 
 ## Architecture assets
@@ -16,28 +17,26 @@ Generic buildings and planting are Kenney models (City Kit Commercial, City Kit
 Suburban, City Kit Roads and Car Kit, all CC0 1.0; sources kept in
 `assets/kenney/`). `npm run assets` selects the models the scene loads, strips
 the tangent attribute they carry for a normal map the material does not use, and
-writes them with repainted atlases into `public/models/`.
+writes them with harmonised atlases into `public/models/`.
 
 Each kit ships one texture atlas that every model in it samples, so colour is a
-property of the atlas rather than of any mesh. The build maps each atlas pixel's
-hue onto a palette family and keeps its lightness, so Kenney's baked shading and
-window detail survive the repaint. Lime stays out of the mapping entirely: it
-marks connected data, and spending it on architecture would blur the Data
-Consolidation chapter. Orchid and pink are likewise reserved for the AI chapter,
-so buildings take a muted rose instead. Greens stay green for planting and cyan
-stays cyan for water, since both carry meaning in the scene.
+property of the atlas rather than of any mesh. Kenney's own hues are kept: they
+are already a plausible city palette, and the brand colours belong to the data
+layer rather than the buildings. The build only caps the most cartoon-saturated
+values so the city sits on the pale canvas without shouting.
 
-One atlas per kit would mean one colour scheme per kit, and a city where every
-building shares a palette reads as a single model rather than a place. The build
-therefore writes six atlases per kit: a neutral one, then five that aim the
-accents at plum, periwinkle, rose, steel and sand. Kenney's commercial stock is
-near-white, so a variant that only re-tinted the accents stayed invisible;
-variants also tint the neutrals and compress lightness downward, which is what
-makes them read across a district. Green and cyan are never re-aimed. Only
-buildings take a variant - trees, cars and street furniture always draw from the
-neutral atlas, so a variant can never turn a tree trunk plum.
+One atlas per kit would mean one wall colour for the whole city, which reads as
+a single model rather than a place. The build therefore writes six atlases per
+kit whose walls take a different real material - concrete as authored, then warm
+stone, brick, slate, weathered stone and sandstone. Only the unsaturated part of
+the atlas is a wall; windows, doors, roof tiles and planting keep Kenney's own
+colour in every variant, so a variant changes what a building is made of rather
+than repainting it. Kenney renders walls near white and a tint at that lightness
+is invisible, so materials that are genuinely darker in life bring the lightness
+down with them. Only buildings take a variant - trees, cars and street furniture
+always draw from the base atlas.
 
-Each variant is one cloned material shared by every model in its kit. GLTFLoader
+Each atlas is one cloned material shared by every model in its kit. GLTFLoader
 hands back a separate material and a separate copy of the atlas per GLB, which
 would be dozens of uploads of one image, so the loader collapses them to one
 material per kit before cloning.
@@ -52,7 +51,7 @@ landmark, platform, road and story prop keeps its exact position.
 
 `block()` fills its rectangle plot by plot rather than dropping one slab. An even
 grid of same-sized buildings is what makes a city read as a toy, so each plot
-varies its height, plan size, colour variant, rotation and offset, a share of
+varies its height, plan size, wall material, rotation and offset, a share of
 plots are left open and planted instead, and a few take a tower so the skyline is
 not one flat line. Detailed models are spent on part of the plots and the rest
 draw from the low-detail stock, which averages 164 triangles against 1,089, so a

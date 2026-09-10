@@ -11,7 +11,11 @@ const material=(color,more={})=>new T.MeshStandardMaterial({color,roughness:.65,
 export function createCivicCity(kit=null){
  const root=new T.Group(),assets={},locations={},overlays=new T.Group(),rotors=[],vehicles=[],gates=[];root.add(overlays);
  const placer=kit&&new KitPlacer(kit);
- const p={white:material('#f6f1fa'),stone:material('#dcd4e5'),edge:material('#c5bacf'),glass:material('#497789',{metalness:.38,roughness:.22}),blue:material('#9155b4'),deep:material('#40284f'),teal:material('#C044D9'),road:material('#8b8995'),mark:material('#faf8fc'),grass:material('#8ca66f'),leaf:material('#547c63'),leaf2:material('#b4c77e'),wood:material('#b3986a'),roof:material('#9d75ac'),water:material('#36a5b7',{metalness:.2,roughness:.28}),solar:material('#245678',{metalness:.3,roughness:.27}),lime:material('#C7FF3D'),orchid:material('#C044D9'),warning:material('#edb64c')};
+ // Architecture uses real building materials. Lime and orchid are the site's
+ // identity and stay on the layer that carries it - data routes, forecast
+ // overlays and the command center's screens - so the city itself is never
+ // painted in them.
+ const p={white:material('#f2efe9'),stone:material('#d9d5cc'),edge:material('#bdb8ae'),glass:material('#54798a',{metalness:.38,roughness:.22}),blue:material('#5d7f99'),deep:material('#3b4148'),teal:material('#7f8f97'),road:material('#8c8c8e'),mark:material('#f4f3f0'),grass:material('#7ea05c'),leaf:material('#3f7043'),leaf2:material('#8fb865'),wood:material('#a8834f'),roof:material('#8f5a4a'),water:material('#3f8fa8',{metalness:.2,roughness:.28}),solar:material('#20344f',{metalness:.3,roughness:.27}),lime:material('#C7FF3D'),orchid:material('#C044D9'),warning:material('#edb64c')};
  function box(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cylinder(g,r,h,x,y,z,m=p.stone,n=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,n),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function sphere(g,r,x,y,z,m=p.leaf,s=[1,1,1]){const a=new T.Mesh(new T.SphereGeometry(r,12,8),m);a.position.set(x,y,z);a.scale.set(...s);a.castShadow=true;g.add(a);return a;}
