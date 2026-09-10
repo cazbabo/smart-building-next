@@ -43,9 +43,13 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   priorities:[ -6, 2,  6,  92],
   ai:        [-24, 4,  8, 116],   // city and command center in one frame
   roadmap:   [-13, 1,  2, 110],
+  // The opening carries the headline under the city rather than beside it, so
+  // the frame looks at a point below the model and lifts it clear of the type.
+  hero:      [-13,-17,  2, 116],
  };
  const FIT=.79;                   // vertical extent as a share of the frame width
  const goal=new T.Vector3(),look=new T.Vector3();
+ let centred=false,chapter='overview';
  let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12;
  // Pointer parallax. The camera swings a little around the city as the cursor
  // crosses the page, which is what gives a still isometric model any sense of
@@ -127,9 +131,16 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  });
  document.addEventListener('visibilitychange',()=>{last=0;invalidate();});reduced.addEventListener('change',()=>{last=0;invalidate();});home();onReady(true);invalidate();
  return {
-  setStage(id,progress=0){city.setStage(id,progress);if(!explore)aimAt(id);invalidate();},
+  setStage(id,progress=0){chapter=id;city.setStage(id,progress);if(!explore&&!centred)aimAt(id);invalidate();},
   setPaused(value){paused=value;last=0;invalidate();},
   setExplore(value){explore=value;controls.enabled=value;resize();},home,
+  // The opening has no narrative beside the city, so nothing to make room for,
+  // and its own framing lifts the model above the headline.
+  setCentred(value){
+   if(value===centred)return;
+   centred=value;bias=value?0:.12;
+   if(value)aimAt('hero');else aimAt(chapter);
+  },
   focus(id){const pos=city.locations[id];if(!pos)return;goalSpan=span=id==='command'?58:74;bias=explore?0:.12;goal.set(...pos);look.copy(goal);resize();controls.update();invalidate();}
  };
 }

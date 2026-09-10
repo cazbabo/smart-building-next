@@ -66,6 +66,26 @@ city and taken out again: at this camera angle a deck on piers crossed in front
 of the districts it was meant to sit among, and the city was harder to read with
 it than without.
 
+## Opening
+
+The page opens dark: the city as a lit subject over a night sky, a statement
+across it and almost no other chrome. Below it the story is the pale canvas it
+always was, because eight chapters of reading is what the rest of the page is
+for and black is bad at that.
+
+It is one canvas throughout. A night layer sits behind it - the renderer clears
+transparent - and fades out as the opening scrolls away, so nothing about the
+city is repainted; lit for a pale canvas, it simply reads as the lit thing
+against the dark. The header follows the same fade. The opening has its own
+camera framing, which looks at a point below the model to lift it clear of the
+headline, and no narrative beside it, so the city sits centred rather than
+pushed left.
+
+The reference for this was a hero built on a compact centred subject with the
+type over its dark underside. A wide isometric city fills its frame instead, so
+the type is given its own ground by a wash rising from the bottom rather than by
+finding a dark part of the subject to sit on.
+
 ## Story and interaction
 
 Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
