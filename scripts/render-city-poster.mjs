@@ -7,6 +7,6 @@ class Element{constructor(name){this.name=name;this.attrs={};this.childNodes=[];
 globalThis.document={createElementNS:(_,name)=>new Element(name)};
 const {SVGRenderer}=await import('three/addons/renderers/SVGRenderer.js');
 const scene=new T.Scene(),city=createCity();city.update(stateAt(0));scene.add(city.root);scene.add(new T.AmbientLight(0xaaaaaa));const sun=new T.DirectionalLight(0xfff8f1,.65);sun.position.set(-40,85,45);scene.add(sun);
-const camera=new T.OrthographicCamera(-66,66,45,-45,.1,400);const target=new T.Vector3(0,10,0);camera.position.set(84,94,84);camera.lookAt(target);
+const camera=new T.OrthographicCamera(-74,74,51,-51,.1,400);const target=new T.Vector3(0,10,0);camera.position.set(84,94,84);camera.lookAt(target);
 const renderer=new SVGRenderer();renderer.setSize(1600,1100);renderer.setQuality('high');renderer.render(scene,camera);renderer.domElement.setAttribute('xmlns','http://www.w3.org/2000/svg');fs.writeFileSync('/tmp/city-intelligence-poster.svg',renderer.domElement.serialize());
 console.log('Rendered city poster');

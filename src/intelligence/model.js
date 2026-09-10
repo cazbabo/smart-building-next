@@ -1,9 +1,10 @@
 import * as T from 'three';
+import {architecture} from './architecture.js';
 const cube=new T.BoxGeometry(1,1,1);
 const M=(c,extra={})=>new T.MeshStandardMaterial({color:c,roughness:.55,...extra});
 export function createCity(){
  const root=new T.Group(),buildings=new T.Group(),layers=new T.Group();root.add(buildings,layers);
- const colors={ivory:M('#f7f5f6'),stone:M('#ddd8df'),glass:M('#517786',{metalness:.32,roughness:.27}),dark:M('#665e70'),bronze:M('#aa8a68',{metalness:.35,roughness:.45}),road:M('#bfc2c8'),line:M('#ffffff'),green:M('#92ac7e'),leaf:M('#88a56a'),lime:M('#c7ff3d'),orchid:M('#c044d9'),water:M('#a9cbd9',{metalness:.35,roughness:.18}),plum:M('#52205e'),warning:M('#f2b84b')};
+ const colors={ivory:M('#f7f5f6'),stone:M('#d9d8c5'),glass:M('#517786',{metalness:.32,roughness:.27}),dark:M('#665e70'),bronze:M('#aa8a68',{metalness:.35,roughness:.45}),road:M('#697e85'),line:M('#ffffff'),green:M('#92ac7e'),leaf:M('#88a56a'),lime:M('#c7ff3d'),orchid:M('#c044d9'),water:M('#41b5c2',{metalness:.35,roughness:.18}),plum:M('#52205e'),warning:M('#f2b84b')};
  const assets={},originals=[],sensors=[],paths=[],silos=[],energyBars=[],tiles=[];
  function box(g,w,h,d,x,y,z,m=colors.ivory){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cyl(g,r,h,x,y,z,m,segments=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,segments),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
@@ -31,11 +32,17 @@ export function createCity(){
   if(variant===1){for(let f=1;f<floors;f++){box(t,w+.65,.09,.65,0,.86+f*2.5,d/2+.1,colors.bronze);}}
   return t;
  }
+ const A=architecture({box,cyl,tree,colors});
  // Chamfered presentation plinth, waterway and a connected street grid.
  const shape=new T.Shape();[[-48,-32],[-44,-36],[44,-36],[48,-32],[48,32],[44,36],[-44,36],[-48,32]].forEach(([x,y],i)=>i?shape.lineTo(x,y):shape.moveTo(x,y));shape.closePath();
  const geo=new T.ExtrudeGeometry(shape,{depth:1.3,bevelEnabled:true,bevelSize:.45,bevelThickness:.25,bevelSegments:2,steps:1});geo.rotateX(-Math.PI/2);
  const base=new T.Mesh(geo,colors.ivory);base.position.y=-1.8;base.receiveShadow=true;base.renderOrder=-30;root.add(base);
  box(root,95,.1,71,0,-.3,0,colors.road).renderOrder=-29;
+ // Faceted terrain under the city, inspired by a landscaped island model.
+ const rim=[[-48,-32],[-44,-36],[44,-36],[48,-32],[48,32],[44,36],[-44,36],[-48,32]];const cliffColors=['#7b9291','#a9ad95','#627c80','#bcc3a3'];
+ const perimeter=[];for(let j=0;j<rim.length;j++){const a=rim[j],b=rim[(j+1)%rim.length];for(let i=0;i<4;i++)perimeter.push([a[0]+(b[0]-a[0])*i/4,a[1]+(b[1]-a[1])*i/4]);}
+ for(let i=0;i<perimeter.length;i++){const [x,z]=perimeter[i],[nx,nz]=perimeter[(i+1)%perimeter.length];const depth=8+(i%3)*1.2;const positions=[x,-1.6,z,nx,-1.6,nz,(x+nx)*.48,-depth,(z+nz)*.48,x,-1.6,z,(x+nx)*.48,-depth,(z+nz)*.48,x*.94,-depth-.6,z*.94,nx,-1.6,nz,nx*.94,-8-((i+1)%3)*1.2-.6,nz*.94,(x+nx)*.48,-depth,(z+nz)*.48];const geometry=new T.BufferGeometry();geometry.setAttribute('position',new T.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();const cliff=new T.Mesh(geometry,M(cliffColors[i%4],{side:T.DoubleSide,flatShading:true}));cliff.renderOrder=-31;root.add(cliff);}
+
  for(const x of [-14,14]){box(root,.12,.02,69,x,.01,0,colors.line).renderOrder=-25;for(let z=-31;z<32;z+=3)box(root,.14,.025,1.3,x+1,.02,z,colors.line).renderOrder=-24;}
  for(const z of [-7,15]){box(root,94,.03,.13,0,.015,z,colors.line).renderOrder=-25;for(let x=-44;x<44;x+=3)box(root,1.2,.025,.13,x,.02,z+.8,colors.line).renderOrder=-24;}
  const water=asset('water',34,0);const waterSurface=box(water,12,.2,68,0,-.04,0,colors.water);waterSurface.renderOrder=-23;
@@ -43,10 +50,10 @@ export function createCity(){
  for(let z=-31;z<33;z+=4)box(water,6,.025,.055,(z%3)-1,.075,z,colors.line);
  // Bridges, handrails and walking decks.
  for(const z of [-7,15]){box(root,18,.7,5,34,.75,z,colors.ivory);box(root,18,.06,3.5,34,1.15,z,colors.road);for(const dz of [-2.25,2.25]){box(root,18,.09,.09,34,2.2,z+dz,colors.bronze);for(let x=26;x<=42;x+=2)box(root,.09,1.1,.09,x,1.65,z+dz,colors.bronze);}}
- const office=asset('office',-29,-21);tile(office,25,23,0,0);tower(office,-5,-2,8,9,10,1);tower(office,6,3,7,8,7);grove(office,-9,9,8);
+ const office=asset('office',-29,-21);tile(office,25,23,0,0);A.sculpted(office,-5,-2,4,4.2,11,0);A.sculpted(office,6,3,3.3,3.5,8,1);grove(office,-9,9,8);
  // Stepped workplace campus with a deep planted terrace.
- const work=asset('office',0,-21);tile(work,22,23,0,0);tower(work,0,0,13,12,5,1);const upper=tower(work,-2,-2,8,7,3);upper.position.y=15.5;grove(work,-8,9,7);
- const homes=asset('residence',-29,4);tile(homes,25,15,0,0);tower(homes,-6,0,6,7,4);tower(homes,5,0,6,7,5,1);grove(homes,-10,6,9);
+ const work=asset('office',0,-21);tile(work,22,23,0,0);A.sculpted(work,-4,-1,3.6,4.2,10,2);A.sculpted(work,5,3,2.7,3.1,7,1);grove(work,-8,9,7);
+ const homes=asset('residence',-29,4);tile(homes,25,15,0,0);A.villa(homes,-6,0,A.P.mint,1.18);A.villa(homes,5,0,A.P.cream,1.18);grove(homes,-10,6,9);
  const publicG=asset('hub',0,3);tile(publicG,22,14,0,0);
  // Low civic pavilion: elliptical roof, glass drum, architectural colonnade.
  const drum=cyl(publicG,5.3,3.2,0,2.2,0,colors.glass,48);drum.scale.z=.68;
@@ -54,21 +61,21 @@ export function createCity(){
  const roof=cyl(publicG,6.5,.34,0,4.4,0,colors.ivory,48);roof.scale.z=.73;
  const greenRoof=cyl(publicG,4.8,.08,0,4.62,0,colors.green,48);greenRoof.scale.z=.65;
  for(let i=0;i<3;i++)box(publicG,2,.12,1.1,-2+i*2,4.75,0,colors.glass);
- const park=asset('park',1,26);tile(park,25,14,0,0);box(park,22,.12,11,0,.48,0,colors.green);
- box(park,24,.12,1.7,0,.58,0,colors.ivory);box(park,1.5,.12,13,4,.59,0,colors.ivory);
- grove(park,-10,-4.5,9);grove(park,-10,4.5,9);
- cyl(park,2.2,.18,-4,.65,1,colors.water,32);for(const x of [-8,8])box(park,2.1,.45,.55,x,.8,2.2,colors.bronze);
- const res2=asset('residence',-30,26);tile(res2,23,14,0,0);tower(res2,-5,0,7,7,3,1);tower(res2,5,0,6,7,4);grove(res2,-9,5.7,8);
+ const park=asset('park',1,26);tile(park,25,14,0,0);A.garden(park);
+ const res2=asset('residence',-30,26);tile(res2,23,14,0,0);A.villa(res2,-5,0,A.P.peach,1.2);A.villa(res2,5,0,A.P.mint,1.1);grove(res2,-9,5.7,8);
  // Riverside utility / public-service blocks, kept low for overlay legibility.
  const utility=asset('water',21,-20);tile(utility,9,23,0,0);box(utility,6,3.5,11,0,2.2,0,colors.ivory);box(utility,6.4,.25,11.4,0,4.1,0,colors.stone);for(let z=-4;z<=4;z+=2)box(utility,4.5,.15,1.1,0,4.3,z,colors.glass);grove(utility,-3,8,3);
  const promenade=asset('park',21,4);tile(promenade,9,14,0,0);grove(promenade,-2,-4,5,'z');
- const leisure=asset('residence',21,26);tile(leisure,9,14,0,0);tower(leisure,0,-1,5,7,2);
+ const leisure=asset('residence',21,26);tile(leisure,9,14,0,0);const waterfront=A.terrace(leisure,0,-1,3,A.P.peach);waterfront.scale.x=.68;
  const far=asset('park',44,0);for(let z=-29;z<=31;z+=4)tree(far,0,z,.75);
+ for(const z of [22,28]){box(root,4,.24,.7,30,.35,z,A.P.sand);A.boat(root,33,z,.15);A.boat(root,37,z+2,-.1);}
+ // Shaded pocket squares and flower beds add scale along the waterfront.
+ for(let z=-27;z<32;z+=8){box(root,1.7,.35,1,43,.45,z,A.P.cream);box(root,1.5,.15,.8,43,.7,z,A.P.grass);}
  const traffic=asset('traffic',14,6);
  for(let i=0;i<8;i++){const x=-41+i*8,z=-7;const g=new T.Group();g.position.set(x,.35,z);root.add(g);box(g,1.7,.45,.85,0,.22,0,i%3?colors.ivory:colors.orchid);box(g,.9,.32,.72,-.08,.58,0,colors.glass);originals.push({g,x,z});}
  for(let i=0;i<5;i++){const g=new T.Group();g.position.set(-14,.35,-27+i*12);g.rotation.y=Math.PI/2;root.add(g);box(g,1.7,.45,.85,0,.22,0,colors.ivory);box(g,.9,.32,.7,0,.58,0,colors.glass);}
  // Sensor hardware: poles, cabinets and restrained coverage rings.
- const locations={water:[27,1,5],traffic:[14,1,-7],park:[5,1,26],office:[-29,31,-21],hub:[0,5,3]};
+ const locations={water:[27,1,5],traffic:[14,1,-7],park:[5,1,26],office:[-34,32,-23],hub:[0,5,3]};
  for(const [id,pos] of Object.entries(locations)){const g=new T.Group();g.position.set(...pos);g.userData.asset=id;layers.add(g);cyl(g,.12,2.8,0,1.3,0,colors.dark,8);box(g,.8,.5,.65,0,2.7,0,colors.ivory);cyl(g,.3,.16,0,3.05,0,colors.lime,16);
  const ring=new T.Mesh(new T.RingGeometry(1.2,1.38,40),new T.MeshBasicMaterial({color:'#a8e629',side:T.DoubleSide,transparent:true,opacity:.8,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.05;g.add(ring);sensors.push({id,g,ring});}
  // The seven source silos retain their district location as connections form.

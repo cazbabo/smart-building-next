@@ -31,3 +31,7 @@ Existing Smart Building pages remain separately accessible. Unpublished earlier 
 ## Readability refinement
 
 Use-case copy follows What happens → What you see → What the team does. Technical data-source explanations remain in detail dialogs. Facades use deeper blue-green glass, bronze fins, recessed entrances, entrance canopies and open roof terraces. Unselected districts retain most material contrast. No automatic one-frame quality downgrade.
+
+## Reference-inspired landscape revision
+
+The user's illustrated city reference supersedes the earlier uniform architecture. The model now combines curved teal towers, tapered blue towers with rounded rectangular sections, an aqua tower, cream/mint/peach residences, roof gardens, a turquoise garden pond, a pedestrian bridge, terraced waterfront building, marina boats and a faceted terrain base. Decorative SVG clouds drift slowly above the scene and pause in reduced-motion mode; they never intercept pointer input and fade during operational chapters. Simulation geometry, district IDs and operational colors remain separate from decorative architecture.
