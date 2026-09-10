@@ -42,6 +42,10 @@ const CATALOGUE = {
  signals: ['roads/traffic-light', 'roads/traffic-light-hanging', 'roads/road-sign-street',
   'roads/road-sign-warning', 'roads/road-sign-stop'],
  clutter: ['roads/dumpster', 'roads/construction-barrier', 'roads/construction-cone'],
+ // Elevated expressway: deck surface, its side barrier, the piers under it, and
+ // the curve that carries it round the bend.
+ viaduct: ['roads/road-straight', 'roads/road-straight-barrier', 'roads/bridge-pillar-wide',
+  'roads/road-curve', 'roads/road-roundabout', 'roads/road-crossroad'],
  cars: ['cars/sedan', 'cars/taxi', 'cars/van', 'cars/suv', 'cars/ambulance', 'cars/police'],
 };
 
@@ -172,16 +176,17 @@ export class KitPlacer {
   * `variant` selects an atlas, which is how two of the same model end up
   * different colours.
   */
- place(model, {owner, x, y = 0, z, scale = 1, rotation = 0, variant = 0}) {
+ place(model, {owner, x, y = 0, z, scale = 1, scaleY = null, rotation = 0, variant = 0}) {
   if (!model) return;
   if (!this.queues.has(owner)) this.queues.set(owner, new Map());
   const byModel = this.queues.get(owner);
   const key = `${model.name}#${variant}`;
   if (!byModel.has(key)) byModel.set(key, {model, variant, matrices: []});
+  const lift = scaleY ?? scale;
   byModel.get(key).matrices.push(new T.Matrix4().compose(
-   new T.Vector3(x, y - model.base * scale, z),
+   new T.Vector3(x, y - model.base * lift, z),
    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), rotation),
-   new T.Vector3(scale, scale, scale),
+   new T.Vector3(scale, lift, scale),
   ));
  }
 

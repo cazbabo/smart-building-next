@@ -41,6 +41,9 @@ const ROSTER = {
   'road-sign-warning', 'road-sign-stop', 'light-square', 'light-square-double',
   'light-curved', 'light-curved-double', 'dumpster', 'construction-barrier',
   'construction-cone',
+  // Elevated expressway: deck, ramp and the columns that carry it.
+  'road-straight', 'road-straight-barrier', 'road-slant-high-barrier', 'bridge-pillar-wide',
+  'road-roundabout', 'road-curve', 'road-crossroad',
  ],
 };
 

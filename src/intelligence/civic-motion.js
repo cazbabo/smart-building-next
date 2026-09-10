@@ -34,7 +34,12 @@ export function createCivicMotion({root,locations,rotors,vehicles,waterSurface,g
   sensorLayer.visible=state.sensors;
   for(const [i,b] of beacons.entries()){b.marker.position.y=b.base+Math.sin(time*1.2+i)*.22;b.core.rotation.y=time*.35;b.ring.rotation.z=time*.2;}
   for(const [i,rotor] of rotors.entries())rotor.rotation.z=time*(.4+i*.06);
-  for(const [i,car] of vehicles.entries()){const u=(time*(.022+(i%3)*.002)+i/vehicles.length)%1;const perimeter=108,d=u*perimeter;let x,z,a;
+  for(const [i,car] of vehicles.entries()){const u=(time*(.022+(i%3)*.002)+i/vehicles.length)%1;
+   // A car may carry its own route - the elevated expressway does - and only
+   // the ones without one follow the central road rectangle below.
+   const route=car.userData.route;
+   if(route){const [rx,ry,rz,ra]=route(u);car.position.set(rx,ry,rz);car.rotation.y=ra;continue;}
+   const perimeter=108,d=u*perimeter;let x,z,a;
    if(d<31){x=-17+d;z=-10;a=0;}else if(d<54){x=14;z=-10+d-31;a=-Math.PI/2;}else if(d<85){x=14-(d-54);z=13;a=Math.PI;}else{x=-17;z=13-(d-85);a=Math.PI/2;}
    // Vehicles follow the central road rectangle and remain outside district platforms.
    car.position.set(x,.45,z);car.rotation.y=a;

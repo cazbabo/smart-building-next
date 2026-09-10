@@ -11,6 +11,9 @@ const material=(color,more={})=>new T.MeshStandardMaterial({color,roughness:.65,
 export function createCivicCity(kit=null){
  const root=new T.Group(),assets={},locations={},overlays=new T.Group(),rotors=[],vehicles=[],gates=[];root.add(overlays);
  const placer=kit&&new KitPlacer(kit);
+ // Route of the elevated expressway, its deck height and the width of one bay.
+ // Declared here because both the structure and the traffic on it need them.
+ const VIADUCT=[[14,-46],[14,-10],[-50,-10]],DECK=8.2,LANE=5.4;
  // Architecture uses real building materials. Lime and orchid are the site's
  // identity and stay on the layer that carries it - data routes, forecast
  // overlays and the command center's screens - so the city itself is never
@@ -160,8 +163,26 @@ export function createCivicCity(kit=null){
  // Vehicles move individually along the road loop, so they stay real meshes
  // rather than instances. civic-motion.js drives the group and expects the car
  // to face +X; kit cars are modelled nose-along -Z, hence the quarter turn.
- for(let i=0;i<8;i++){
+ // Traffic on the expressway runs its own polyline; the rest keep the ground loop.
+ const legs=VIADUCT.slice(0,-1).map(([ax,az],i)=>{
+  const [bx,bz]=VIADUCT[i+1];
+  return {ax,az,dx:bx-ax,dz:bz-az,span:Math.hypot(bx-ax,bz-az),turn:Math.atan2(bx-ax,bz-az)};
+ });
+ const total=legs.reduce((sum,leg)=>sum+leg.span,0);
+ const viaductRoute=(offset,reverse)=>u=>{
+  let d=((reverse?1-u:u)+offset)%1*total;
+  for(const leg of legs){
+   if(d>leg.span){d-=leg.span;continue;}
+   const t=d/leg.span,side=reverse?-1:1;
+   // Sit in a lane rather than on the centre line, and face the way of travel.
+   const nx=leg.dz/leg.span*side*LANE*.2,nz=-leg.dx/leg.span*side*LANE*.2;
+   return [leg.ax+leg.dx*t+nx,DECK+.55,leg.az+leg.dz*t+nz,leg.turn+(reverse?Math.PI:0)];
+  }
+  return [legs[0].ax,DECK+.55,legs[0].az,legs[0].turn];
+ };
+ for(let i=0;i<(placer?14:8);i++){
   const car=new T.Group();root.add(car);vehicles.push(car);
+  if(placer&&i>=8)car.userData.route=viaductRoute((i-8)/6,i%2===1);
   if(placer){
    const model=pick(kit.group('cars'),i,i*7);
    const scale=2.6/model.depth,body=new T.Mesh(model.geometry,model.material);
@@ -173,6 +194,39 @@ export function createCivicCity(kit=null){
  }
  const risk=new T.Mesh(new T.PlaneGeometry(23,16),new T.MeshBasicMaterial({color:'#F05BB5',transparent:true,opacity:.24,side:T.DoubleSide,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}));risk.rotation.x=-Math.PI/2;risk.position.set(-2,4.45,22);overlays.add(risk);
  const warning=new T.Mesh(new T.OctahedronGeometry(.8),p.warning);warning.position.set(-2,6.5,24);overlays.add(warning);
+ // An elevated expressway threading the city on piers. Nine platforms on a three
+ // by three grid read as a diagram; a route that crosses the whole city at height,
+ // turns a corner and runs off both edges is what makes it read as somewhere a
+ // road passes through. It follows the existing corridors, so it clears every
+ // building and its piers land on open ground.
+ if(placer){
+  const deck=kit.get('roads/road-straight'),rail=kit.get('roads/road-straight-barrier');
+  const pier=kit.get('roads/bridge-pillar-wide'),junction=kit.get('roads/road-crossroad');
+  // The pier model is a slim 0.14 post; carried to deck height by uniform scale
+  // it would be a needle, so width and height are scaled apart.
+  const column=(px,pz)=>placer.place(pier,{owner:root,x:px,y:0,z:pz,scale:9,scaleY:DECK/pier.height});
+  let carried=0;
+  for(let leg=0;leg<VIADUCT.length-1;leg++){
+   const [ax,az]=VIADUCT[leg],[bx,bz]=VIADUCT[leg+1];
+   const dx=bx-ax,dz=bz-az,span=Math.hypot(dx,dz),turn=Math.atan2(dx,dz);
+   const tiles=Math.max(1,Math.round(span/LANE));
+   for(let i=0;i<tiles;i++){
+    const t=(i+.5)/tiles,px=ax+dx*t,pz=az+dz*t;
+    placer.place(deck,{owner:root,x:px,y:DECK,z:pz,scale:LANE,rotation:turn});
+    placer.place(rail,{owner:root,x:px,y:DECK,z:pz,scale:LANE,rotation:turn});
+    // Piers every third bay, and never out over the plate's edge lip.
+    if(carried++%3===0&&Math.abs(px)<44&&Math.abs(pz)<33)column(px,pz);
+   }
+  }
+  // Square the corner with a junction tile and carry it on its own pier.
+  const [cx,,cz]=[VIADUCT[1][0],0,VIADUCT[1][1]];
+  placer.place(junction,{owner:root,x:cx,y:DECK,z:cz,scale:LANE});
+  column(cx,cz);
+  // A roundabout where two ground streets meet, so the grid has one junction
+  // that is not another right angle.
+  placer.place(kit.get('roads/road-roundabout'),{owner:root,x:-17,y:.06,z:13,scale:LANE*.92,rotation:0});
+ }
+
  // Street level. The road corridors between platforms carried nothing but paint,
  // which is most of why the city read as a model rather than a place.
  if(placer){

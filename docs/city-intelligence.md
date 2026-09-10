@@ -60,6 +60,16 @@ platform margin, which was otherwise bare lawn, and the road corridors carry
 lamps, signals, signs, skips and parked cars: they had nothing but paint before,
 which was most of why the city read as a model rather than a place.
 
+Nine platforms on a three by three grid still read as a diagram, so an elevated
+expressway crosses the whole city on piers, turns a corner and runs off both
+edges. It follows the existing road corridors, which is what keeps it clear of
+every building and puts its piers on open ground, and it is the one element in
+the scene that is neither on the grid nor on the ground. A roundabout replaces
+one street junction so the ground plan has a corner that is not another right
+angle. Six cars run the expressway on their own polyline; the other eight keep
+the central loop, so `civic-motion.js` gained only a check for a per-vehicle
+route and drives everything else exactly as before.
+
 ## Story and interaction
 
 Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
@@ -95,8 +105,8 @@ Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled st
 
 - Production build for all three page entries.
 - `node tests/civic-motion.test.mjs`: vehicles and rotors move; equal timestamps preserve ambient poses; connection reveal progresses; water and gates reverse; mock forecast values match; geometry counts remain stable through every chapter. This runs the procedural fallback, since it builds the city with no kit.
-- `node tests/kenney-city.test.mjs`: every kit model loads and reports a finite extent with no tangent attribute; the city builds with the kit; rotors, the eight vehicles, the flood gates and the water surface all survive the swap; every district keeps its location and clickable group; kit buildings land inside districts; geometry counts stay stable through every chapter.
-- With the kit: 618 meshes, 874 instances, 158,866 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city carries half again the triangles of the procedural one but a third of the meshes, which is the trade that buys the density.
+- `node tests/kenney-city.test.mjs`: every kit model loads and reports a finite extent with no tangent attribute; the city builds with the kit; rotors, the fourteen vehicles, the flood gates and the water surface all survive the swap; expressway traffic rides the deck and moves along it; every district keeps its location and clickable group; kit buildings land inside districts; geometry counts stay stable through every chapter.
+- With the kit: 629 meshes, 926 instances, 177,030 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city carries half again the triangles of the procedural one but a third of the meshes, which is the trade that buys the density.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
 - Offline poster render inspected. GPU appearance, shadow quality, ambient occlusion and frame rate remain unverified: this environment has no WebGL, so nothing here has been seen through the real renderer. The poster's own shadows come from its software shadow map, not from the renderer the page uses.
 
