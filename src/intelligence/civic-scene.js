@@ -104,7 +104,11 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   fragmented:[ -8, 1,  2,  94],   // in among the districts, before they connect
   foundation:[-30, 6,  2, 108],   // the routes and the command center they run to
   iot:       [ -4, 4,  2,  84],   // close enough for the sensor markers to read
-  flood:     [ -2, 3, 19,  70],   // the waterway the chapter is about
+  // Close on the waterway put the command center off-frame, so the seven data
+  // routes crossed the whole view as diagonal streaks with nothing to converge
+  // on - and this chapter's text is precisely about the reading reaching the
+  // command center. Far enough back to hold both, close enough to read a gate.
+  flood:     [-16,10, 11,  96],
   priorities:[ -6, 2,  6,  92],
   ai:        [-24, 4,  8, 116],   // city and command center in one frame
   roadmap:   [-13, 1,  2, 110],

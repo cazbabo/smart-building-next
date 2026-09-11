@@ -94,10 +94,18 @@ h1{font-size:clamp(38px,3.35vw,60px);margin-bottom:30px;text-wrap:balance}
    opaque and put the seam back: it is to blur what comes through. A masked
    backdrop-filter ramps the blur in alongside the wash, so the city carries on
    under the words as out-of-focus depth and never competes with a letterform. */
-.narrative-column{position:relative;z-index:5;width:44%;margin-left:56%;padding:0 5vw 0 2.5%;background:linear-gradient(90deg,#FAF8FC00,#FAF8FCC4 5%,#FAF8FC 16%)}
-.narrative-column::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+/* Both the wash and the blur live on one element that starts 260px to the LEFT
+   of the column, so the ramp finishes before the column does and the type never
+   begins on ground that is still climbing. Ramping inside the column instead
+   forced the trade the other way - a 35px ramp cut a visible vertical band
+   straight through the model at 56% of the viewport, which is the seam this
+   layout exists to avoid. Lengths are px rather than percentages because the
+   ramp has to end a fixed distance before the first glyph at every width. */
+.narrative-column{position:relative;z-index:5;width:44%;margin-left:56%;padding:0 5vw 0 40px;background:none}
+.narrative-column::before{content:'';position:absolute;inset:0 0 0 -260px;z-index:-1;pointer-events:none;
+ background:linear-gradient(90deg,#FAF8FC00 0,#FAF8FC4F 95px,#FAF8FCC9 170px,#FAF8FC 220px);
  backdrop-filter:blur(20px) saturate(.8);-webkit-backdrop-filter:blur(20px) saturate(.8);
- -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%);mask-image:linear-gradient(90deg,transparent,#000 14%)}
+ -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 212px);mask-image:linear-gradient(90deg,transparent 0,#000 212px)}
 .view-note{z-index:6}
 @media(max-width:1100px){
  .narrative-column{width:50%;margin-left:50%;padding-right:4vw}
@@ -212,7 +220,12 @@ h1{font-size:clamp(38px,3.35vw,60px);margin-bottom:30px;text-wrap:balance}
 .hero-start:hover,.hero-explore:hover{background:#ffffff24;border-color:#ffffff52}
 .hero-explore{background:var(--lime);border-color:var(--lime);color:#2B3A10;font-weight:550}
 .hero-explore:hover{background:#D6FF62;border-color:#D6FF62}
-/* The city sits behind the hero as well as the story, so it leaves the grid. */
+/* The city sits behind the hero as well as the story, so it leaves the grid.
+   z-index:auto rather than 0 on purpose: at 0 this is a stacking context, which
+   trapped .view-note's z-index:6 inside it, so the narrative's scrim painted
+   over the disclaimer pill and took it below AA at 1366 in four chapters. With
+   no context of its own the pill competes with the narrative directly, while
+   the canvas and the rest of the stage furniture still sit under it. */
 .visual-column{position:fixed;inset:86px 0 0;z-index:0}
 .experience-grid{position:relative;z-index:1}
 /* The stage furniture belongs to the story, not the opening. */
@@ -231,7 +244,12 @@ body[data-stage=hero] .view-heading{opacity:0;pointer-events:none;transition:opa
    words - depth rather than a panel. The header goes dark with it; a pale bar
    over a night sky was the loudest thing on the page. */
 .hero::after{content:'';position:absolute;inset:auto 0 0;height:62%;pointer-events:none;
- background:linear-gradient(#08061000,#080610C4 44%,#080610F2);opacity:var(--night,0);z-index:-1}
+ background:linear-gradient(#08061000,#080610C4 44%,#080610F2);opacity:var(--hero,1);z-index:-1}
+/* The wash follows the headline, not the night. Tied to --night it was still
+   12% on when the hero was 88% gone, and because it stops dead at the hero's
+   own bottom edge that read as a grey band pinned under the header for the
+   whole of the fade. --hero is spent by then, so the edge goes with it; the
+   night layer itself covers the viewport and needs no edge. */
 body[data-stage=hero] .site-header{background:#080610D9;border-bottom-color:#ffffff17}
 body[data-stage=hero] .site-header,body[data-stage=hero] .brand{color:#F3EEF7}
 body[data-stage=hero] .site-header nav a{color:#B9A7C6}
@@ -268,3 +286,65 @@ body[data-stage=hero] #loading{color:#CFC3D8}
    a note laid on the city instead of a pin punched into it. */
 .map-names span{background:#52205ED6;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
  padding:6px 9px;border-radius:5px;font-weight:500;letter-spacing:.01em;box-shadow:0 4px 14px #52205E24}
+
+/* Floating chrome carries its own ground. The heading, the scroll instruction
+   and the disclaimer sit directly on the canvas, so what is behind them is a
+   moving 3D scene: measured against the real pixels with the text hidden, the
+   chapter name ran at 1.09:1 where a data route passed behind it and the mode
+   label at 1.00:1 over a white roof. Contrast cannot depend on where the camera
+   happens to be, so each one gets a pale pill - the same shape as the header's
+   nav chips - and the type goes up a size, since 10px was set for a caption and
+   this page is shown on a projector. */
+.view-heading{top:14px;left:26px;right:auto;width:max-content;max-width:calc(100% - 52px);
+ margin:0;padding:8px 16px 8px 12px;border-radius:999px;font-size:14px;color:var(--navy);
+ background:#FAF8FCF5;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+ box-shadow:0 1px 5px #52205E17;min-height:0}
+.view-heading b{color:var(--navy)}
+#mode-label{margin-left:14px;font-size:11.5px;color:#63496E}
+/* The instruction and the disclaimer are one line of fine print, not two. As
+   separate boxes they overlapped: the instruction was a flex item with
+   flex-basis:100% so it stretched to the controls row rather than shrinking to
+   its text, and the disclaimer beside it ran past the narrative's left edge at
+   1100. One pill on its own row above the buttons, capped so it wraps rather
+   than reaching the column, and the readout lifts to leave room for two lines. */
+.view-note{left:26px;right:auto;bottom:70px;width:max-content;max-width:min(600px,46%);
+ padding:6px 14px;border-radius:999px;text-align:left;
+ font-size:12px;line-height:1.5;color:#63496E;background:#FAF8FCF5;
+ -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 1px 5px #52205E14}
+#view-instruction{color:#52205E}
+.view-sep{margin:0 8px;color:#BCA8C5}
+.scene-readout{bottom:128px}
+.exploring .view-note{left:5vw;right:auto}
+.exploring .view-heading{left:5vw;top:18px;padding:8px 16px 8px 12px}
+@media(max-width:1100px){.view-note{font-size:12px}}
+@media(max-width:800px){
+ .view-heading{left:14px;top:10px}
+ #view-instruction,.view-sep{display:none}
+ .view-note{left:14px;right:auto;bottom:8px;max-width:calc(100% - 28px)}
+}
+
+/* The one interactive element in the whole narrative had been stripped back to
+   a text row with a rule under it, which reads as a list, not as something to
+   press. It keeps a card. */
+.district-list button{background:#FFFFFFC4;border:1px solid #E3D6EA;border-radius:8px;padding:13px 14px}
+.district-list button:hover{border-color:#C044D9;background:#fff}
+
+/* The header was 96% opaque, so the narrative scrolling under it showed through
+   as a grey smudge along the top edge. */
+.site-header{background:#FAF8FC}
+
+/* The compact layout has no canvas behind the opening: .visual-column leaves
+   its fixed position here, so the night layer sits below the hero rather than
+   behind it, and the dark treatment left white type on the pale page at about
+   1.02:1. The opening is simply the light page at this width - app.js keeps the
+   stage out of its hero state to match, so the header and the stage furniture
+   stay light too. */
+@media(max-width:800px){
+ #nightfall,.hero::after{display:none}
+ .hero-copy{opacity:1;transform:none}
+ .hero-eyebrow{color:var(--teal);text-shadow:none}
+ .hero-title{color:var(--navy);text-shadow:none}
+ .hero-line{color:#75617C}
+ .hero-start{background:#fff;border-color:#D8CBDF;color:var(--navy)}
+ .hero-start:hover{background:#F4EFF7;border-color:#C044D9}
+}

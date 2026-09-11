@@ -5,11 +5,12 @@ const $=s=>document.querySelector(s);
 const mark='<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 12 7v13l-12 6L4 23V10Z" fill="#C7FF3D" stroke="currentColor" stroke-width="1.4"/><path d="m4 10 12 7 12-7M16 17v12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
 const phase=i=>i<2?'The city today':i===2?'Phase 1':i<6?'Phase 2':'Phase 3';
 $('#app').innerHTML=`<a class="skip" href="#overview">Skip to story</a><header class="site-header"><a class="brand" href="#overview">${mark}<span>City Intelligence</span></a><nav aria-label="Presentation phases"><a href="#foundation">01 Data</a><a href="#iot">02 IoT</a><a href="#ai">03 AI</a></nav><button id="fullscreen" aria-label="Enter fullscreen">⛶</button></header>
-<section class="hero" id="hero"><div class="hero-copy"><span class="hero-eyebrow">City Intelligence</span><h2 class="hero-title">From data to<br>a city in sync.</h2><p class="hero-line">One picture of the city, built from the systems that already run it.</p><div class="hero-actions"><a class="hero-start" href="#overview">Start the story <span>&darr;</span></a><button class="hero-explore" id="hero-explore">Explore the 3D city</button></div></div></section><main class="experience-grid"><aside class="visual-column" aria-label="City visualization"><div class="visual-stage"><div class="view-heading"><span class="live-dot"></span><b id="view-title">The city today</b><span id="mode-label">Illustrative 3D city</span></div><div class="city-view" id="city-view"><div id="nightfall"></div><img id="city-poster" src="/city-intelligence-civic.png" width="1600" height="1200" alt="A civic district with a command center, municipal hall, hospital, school, industry, energy, park and flood gate"><div id="city-canvas"></div><div class="map-names" aria-hidden="true">${Object.entries(places).map(([id,p])=>`<span class="name-${id}">${p.name}</span>`).join('')}</div><div id="loading" role="status">Preparing the 3D city…</div></div><div class="scene-readout" aria-label="Illustrative city activity"><div><span id="activity-label">City in motion</span><strong id="activity-value">A living district</strong><p id="activity-copy">Traffic moves. Wind turbines turn. Scroll to connect the city.</p></div><div class="activity-symbol" aria-hidden="true"><i></i><i></i><i></i></div><div class="scene-progress"><span id="chapter-fill"></span></div></div><div class="view-controls"><button id="explore">Explore 3D city</button><button id="motion-toggle" aria-pressed="false">Pause animation</button><button id="home" hidden>Reset view</button><span id="view-instruction">Scroll the page to follow the story.</span></div><p class="view-note">Illustrative experience using mock data. Not connected to live systems.</p></div></aside>
+<section class="hero" id="hero"><div class="hero-copy"><span class="hero-eyebrow">City Intelligence</span><h2 class="hero-title">From data to<br>a city in sync.</h2><p class="hero-line">One picture of the city, built from the systems that already run it.</p><div class="hero-actions"><a class="hero-start" href="#overview">Start the story <span>&darr;</span></a><button class="hero-explore" id="hero-explore">Explore the 3D city</button></div></div></section><main class="experience-grid"><aside class="visual-column" aria-label="City visualization"><div class="visual-stage"><div class="view-heading"><span class="live-dot"></span><b id="view-title">The city today</b><span id="mode-label">Illustrative 3D city</span></div><div class="city-view" id="city-view"><div id="nightfall"></div><img id="city-poster" src="/city-intelligence-civic.png" width="1600" height="1200" alt="A civic district with a command center, municipal hall, hospital, school, industry, energy, park and flood gate"><div id="city-canvas"></div><div class="map-names" aria-hidden="true">${Object.entries(places).map(([id,p])=>`<span class="name-${id}">${p.name}</span>`).join('')}</div><div id="loading" role="status">Preparing the 3D city…</div></div><div class="scene-readout" aria-label="Illustrative city activity"><div><span id="activity-label">City in motion</span><strong id="activity-value">A living district</strong><p id="activity-copy">Traffic moves. Wind turbines turn. Scroll to connect the city.</p></div><div class="activity-symbol" aria-hidden="true"><i></i><i></i><i></i></div><div class="scene-progress"><span id="chapter-fill"></span></div></div><div class="view-controls"><button id="explore">Explore 3D city</button><button id="motion-toggle" aria-pressed="false">Pause animation</button><button id="home" hidden>Reset view</button></div><p class="view-note"><span id="view-instruction">Scroll the page to follow the story.</span><span class="view-sep">·</span>Illustrative experience using mock data. Not connected to live systems.</p></div></aside>
 <div class="narrative-column">${sections.map((s,i)=>`<section class="story-section" id="${s.id}" aria-labelledby="title-${s.id}"><div class="section-phase"><span>${String(i+1).padStart(2,'0')} / 08</span>${s.phase}</div><h1 id="title-${s.id}">${s.title.replaceAll('\n','<br>')}</h1><p class="section-intro">${s.intro}</p>${['foundation','iot','ai'].includes(s.id)?`<div class="phase-band"><span>${phase(i)}</span><b>${s.id==='foundation'?'Connect existing data':s.id==='iot'?'See field conditions':'Anticipate and recommend'}</b></div>`:''}<ol class="story-points">${s.points.map(([head,body],j)=>`<li><span>${String(j+1).padStart(2,'0')}</span><div><h2>${head}</h2><p>${body}</p></div></li>`).join('')}</ol>${s.id==='priorities'?`<div class="district-list">${Object.entries(places).map(([id,p])=>`<button data-place="${id}">${p.name}<span>+</span></button>`).join('')}</div>`:''}<div class="takeaway">${s.takeaway}</div>${i<7?`<a class="next-section" href="#${sections[i+1].id}">Continue to ${sections[i+1].phase}<span>↓</span></a>`:'<a class="next-section" href="#overview">Restart the story<span>↑</span></a>'}</section>`).join('')}</div></main>
 <footer class="page-footer"><span>City Intelligence Platform</span><span>Data Consolidation → IoT Data Integration → AI-Powered Intelligence</span><a href="#overview">Back to top ↑</a></footer>
 <dialog id="place-detail" aria-labelledby="place-title"><button id="close-detail" aria-label="Close details">×</button><span class="detail-eyebrow">How this solution works</span><h2 id="place-title"></h2><div id="detail-copy"></div><button id="focus-place">View this district in 3D</button><small>Illustrative workflow. No live device control.</small></dialog><div id="announcement" role="status" class="sr"></div>`;
 let scene=null,current='overview',activePlace='civic',explore=false,lastOpener=null,chapterProgress=0,paused=false;
+const compact=matchMedia('(max-width: 800px)');
 const elements=[...document.querySelectorAll('.story-section')];
 // Scroll drives solution state, not camera position or canvas size.
 const activity={
@@ -33,7 +34,11 @@ function syncSection(){
  const night=1-over;
  document.documentElement.style.setProperty('--night',night.toFixed(3));
  document.documentElement.style.setProperty('--hero',(1-Math.min(1,over*1.6)).toFixed(3));
- const opening=night>.5;
+ // The night layer lives inside the city view, which is fixed behind the whole
+ // page on desktop but sits below the hero in the compact layout - so there the
+ // dark treatment put white type on the pale page. The opening stays light at
+ // that width and the stage never enters its hero state.
+ const opening=night>.5&&!compact.matches;
  document.body.dataset.stage=opening?'hero':'story';
  scene?.setCentred(opening);scene?.setNight(night);
  const turned=chosen.id!==current;
@@ -84,9 +89,19 @@ function placeLabels(labels){
  // The narrative scrolls over the right of the same canvas and sits above the
  // labels, so a label left under it is unreadable. Districts on that side hang
  // their label to the left of the marker instead, and only one that still will
- // not clear the text is dropped.
- const column=innerWidth>800?vw*.56/vw*100:101;
- const taken=[];
+ // not clear the text is dropped. The limit is the narrative's own left edge
+ // less part of the scrim's 260px ramp, not the column edge: a chip that lands
+ // inside the ramp is washed pale long before the text begins.
+ const narrative=$('.narrative-column');
+ const column=innerWidth>800?(narrative.offsetLeft-165)/vw*100:101;
+ // The chapter heading floats over the top-left of the same stage. A label
+ // landing on it made both unreadable, so it is seeded as already taken. Its
+ // width is the heading's own - a constant generous enough for the longest
+ // chapter name swallowed the command center's label at narrower viewports -
+ // and offsetLeft/offsetWidth are already relative to the same box the labels
+ // are placed in, so this costs no more layout than the two reads above.
+ const head=$('.view-heading');
+ const taken=[[0,0,(head.offsetLeft+head.offsetWidth+10)/vw*100,(head.offsetTop+head.offsetHeight+8)/vh*100]];
  const allowed=explore?null:CHAPTER_LABELS[current]??LABEL_ORDER;
  for(const id of LABEL_ORDER){
   const label=$(`.name-${id}`),spot=labels[id];
@@ -96,13 +111,18 @@ function placeLabels(labels){
   const [x,y]=spot;
   const w=(label.textContent.length*6.4+22)/vw*100,h=27/vh*100;
   const left=x+w/2>column-1;
-  const box=left?[x-w-1,y-h,x-1,y]:[x-w/2,y-h,x+w/2,y];
+  // A chip normally sits over its marker. The command center is above the city
+  // rather than in it, so its marker lands at the very top of the frame and the
+  // chip was drawn off the canvas into the header - present in the DOM, never
+  // readable. Those hang under the marker instead of being lost.
+  const top=y-h<0?y+1:y-h;
+  const box=left?[x-w-1,top,x-1,top+h]:[x-w/2,top,x+w/2,top+h];
   const clash=taken.some(o=>box[0]<o[2]&&box[2]>o[0]&&box[1]<o[3]&&box[3]>o[1]);
-  label.hidden=clash||box[0]<-4||box[2]>column-1||y<0||y>106;
+  label.hidden=clash||box[0]<-4||box[2]>column-1||box[1]<0||box[3]>104;
   if(label.hidden)continue;
   taken.push(box);
-  label.style.left=`${left?x-1:x}%`;label.style.top=`${y}%`;label.style.bottom='auto';
-  label.style.transform=left?'translate(-100%,-100%)':'';
+  label.style.left=`${left?x-1:x}%`;label.style.top=`${top}%`;label.style.bottom='auto';
+  label.style.transform=left?'translate(-100%,0)':'translate(-50%,0)';
  }
 }
 function showPlace(id,opener){const p=places[id];if(!p)return;activePlace=id;lastOpener=opener||document.activeElement;$('#place-title').textContent=p.name;$('#detail-copy').innerHTML=`<h3>Data source</h3><p>${p.source}</p><h3>What the platform does</h3><p>${p.work}</p><h3>How the team uses it</h3><p>${p.outcome}</p>`;$('#place-detail').showModal();}
@@ -114,6 +134,6 @@ $('#motion-toggle').onclick=()=>{paused=!paused;scene?.setPaused(paused);documen
 $('#explore').onclick=()=>setExplore(!explore);$('#hero-explore').onclick=()=>{setExplore(true);};$('#home').onclick=()=>scene?.home();$('#focus-place').onclick=()=>{$('#place-detail').close();setExplore(true);scene?.focus(activePlace);};
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{$('#announcement').textContent='Fullscreen is unavailable in this browser.';}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&explore&&!$('#place-detail').open)setExplore(false);});
-async function init(){if(matchMedia('(max-width: 800px)').matches){$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Lightweight city view';return;}
+async function init(){if(compact.matches){$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Lightweight city view';return;}
  try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
 syncSection();init();
