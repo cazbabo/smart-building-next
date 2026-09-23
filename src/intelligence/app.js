@@ -1,6 +1,7 @@
 import './style.css';
 import {sections,places} from './long-story.js';
 import {storyTelemetry} from './story-state.js';
+import {startPresentation} from './present.js';
 const $=s=>document.querySelector(s);
 const mark='<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 12 7v13l-12 6L4 23V10Z" fill="#C7FF3D" stroke="currentColor" stroke-width="1.4"/><path d="m4 10 12 7 12-7M16 17v12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
 const phase=i=>i<2?'The city today':i===2?'Phase 1':i<6?'Phase 2':'Phase 3';
@@ -9,29 +10,44 @@ $('#app').innerHTML=`<a class="skip" href="#overview">Skip to story</a><header c
 <div class="narrative-column">${sections.map((s,i)=>`<section class="story-section" id="${s.id}" aria-labelledby="title-${s.id}"><div class="section-phase"><span>${String(i+1).padStart(2,'0')} / 08</span>${s.phase}</div><h1 id="title-${s.id}">${s.title.replaceAll('\n','<br>')}</h1><p class="section-intro">${s.intro}</p>${['foundation','iot','ai'].includes(s.id)?`<div class="phase-band"><span>${phase(i)}</span><b>${s.id==='foundation'?'Connect existing data':s.id==='iot'?'See field conditions':'Anticipate and recommend'}</b></div>`:''}<ol class="story-points">${s.points.map(([head,body],j)=>`<li><span>${String(j+1).padStart(2,'0')}</span><div><h2>${head}</h2><p>${body}</p></div></li>`).join('')}</ol>${s.id==='priorities'?`<div class="district-list">${Object.entries(places).map(([id,p])=>`<button data-place="${id}">${p.name}<span>+</span></button>`).join('')}</div>`:''}<div class="takeaway">${s.takeaway}</div>${i<7?`<a class="next-section" href="#${sections[i+1].id}">Continue to ${sections[i+1].phase}<span>↓</span></a>`:'<a class="next-section" href="#overview">Restart the story<span>↑</span></a>'}</section>`).join('')}</div></main>
 <footer class="page-footer"><span>City Intelligence Platform</span><span>Data Consolidation → IoT Data Integration → AI-Powered Intelligence</span><a href="#overview">Back to top ↑</a></footer>
 <dialog id="place-detail" aria-labelledby="place-title"><button id="close-detail" aria-label="Close details">×</button><span class="detail-eyebrow">How this solution works</span><h2 id="place-title"></h2><div id="detail-copy"></div><button id="focus-place">View this district in 3D</button><small>Illustrative workflow. No live device control.</small></dialog><div id="announcement" role="status" class="sr"></div>`;
-let scene=null,current='overview',activePlace='civic',explore=false,lastOpener=null,chapterProgress=0,paused=false;
+let scene=null,current='overview',activePlace='civic',explore=false,lastOpener=null,chapterProgress=0,paused=false,presentation=null;
 const compact=matchMedia('(max-width: 800px)');
+// A desktop screen presents the story a chapter at a time (present.js); a phone
+// keeps the scrolling page, which is what a phone is good at, and ?scroll keeps
+// it anywhere - for reading at a desk rather than presenting.
+const presenting=!compact.matches&&!new URLSearchParams(location.search).has('scroll');
+const HINT=presenting?'Scroll, use the arrow keys or a clicker to move through the story.':'Scroll the page to follow the story.';
+compact.addEventListener('change',()=>{if(presenting===compact.matches)location.reload();});
 const elements=[...document.querySelectorAll('.story-section')];
 // Scroll drives solution state, not camera position or canvas size.
 const activity={
- overview:['City in motion','A living district','Traffic moves. Wind turbines turn. Scroll to connect the city.'],
+ overview:['City in motion','A living district','Traffic moves. Wind turbines turn. Next, the city connects.'],
  fragmented:['Disconnected systems','Separate signals','Water, transport and facilities each hold part of the picture.'],
  foundation:['Phase 1 · Data','Connecting the city','Lime data streams join existing systems to the command center.'],
  iot:['Phase 2 · IoT','1.20 m','Sensor markers appear above the places being monitored.'],
- flood:['Flood response','1.20 m','Scroll to raise the simulated water level and reveal the response.'],
+ flood:['Flood response','1.20 m','The simulated water level rises and the flood gates respond.'],
  priorities:['Connected services','10 city districts','Select a district to see its data, workflow and responsible team.'],
  ai:['Phase 3 · AI','1.60 m → 1.90 m','Pink marks the forecast area. The team reviews the next action.'],
  roadmap:['From data to decisions','Data → IoT → AI','A shared foundation, expanded one useful capability at a time.']
 };
+// The story's state is the chapter, how far into it the scene has played, and
+// how much of the dark opening is still on screen. The scrolling page works it
+// out from the scroll position; the presentation derives it from the step it is
+// on and plays the chapter itself. Both hand it to applyState.
 function syncSection(){
+ if(presentation)return;
  let chosen=elements[0];const line=innerHeight*.40;
  for(const el of elements){if(el.getBoundingClientRect().top<=line)chosen=el;else break;}
- const rect=chosen.getBoundingClientRect();chapterProgress=Math.max(0,Math.min(1,(line-rect.top)/rect.height));
-// How far the opening has scrolled away: 1 while the hero holds the frame, 0
- // once the story owns it. Drives the night layer, the hero copy and whether the
- // stage furniture is on screen.
+ const rect=chosen.getBoundingClientRect();
+ const progress=Math.max(0,Math.min(1,(line-rect.top)/rect.height));
+ // How far the opening has scrolled away: 1 while the hero holds the frame, 0
+ // once the story owns it.
  const hero=$('#hero'),over=hero?Math.max(0,Math.min(1,-hero.getBoundingClientRect().top/Math.max(1,hero.offsetHeight))):1;
- const night=1-over;
+ applyState(chosen.id,progress,1-over);
+}
+function applyState(id,progress,night){
+ chapterProgress=progress;
+ const over=1-night;
  document.documentElement.style.setProperty('--night',night.toFixed(3));
  document.documentElement.style.setProperty('--hero',(1-Math.min(1,over*1.6)).toFixed(3));
  // The night layer lives inside the city view, which is fixed behind the whole
@@ -41,8 +57,8 @@ function syncSection(){
  const opening=night>.5&&!compact.matches;
  document.body.dataset.stage=opening?'hero':'story';
  scene?.setCentred(opening);scene?.setNight(night);
- const turned=chosen.id!==current;
- current=chosen.id;document.body.dataset.chapter=current;
+ const turned=id!==current;
+ current=id;document.body.dataset.chapter=current;
  // The readout rewrites itself every frame during flood and AI, so it is the
  // change of chapter that animates, not the change of text.
  if(turned){const box=$('.scene-readout');box.classList.remove('turned');void box.offsetWidth;box.classList.add('turned');}
@@ -92,8 +108,8 @@ function placeLabels(labels){
  // not clear the text is dropped. The limit is the narrative's own left edge
  // less part of the scrim's 260px ramp, not the column edge: a chip that lands
  // inside the ramp is washed pale long before the text begins.
- const narrative=$('.narrative-column');
- const column=innerWidth>800?(narrative.offsetLeft-165)/vw*100:101;
+ const edge=presentation?presentation.edge:$('.narrative-column').offsetLeft;
+ const column=innerWidth>800?(edge-165)/vw*100:101;
  // The chapter heading floats over the top-left of the same stage. A label
  // landing on it made both unreadable, so it is seeded as already taken. Its
  // width is the heading's own - a constant generous enough for the longest
@@ -129,11 +145,18 @@ function showPlace(id,opener){const p=places[id];if(!p)return;activePlace=id;las
 $('#close-detail').onclick=()=>{$('#place-detail').close();lastOpener?.focus();};
 $('#place-detail').addEventListener('cancel',()=>lastOpener?.focus());
 document.addEventListener('click',e=>{const b=e.target.closest('[data-place]');if(b)showPlace(b.dataset.place,b);});
-function setExplore(value){explore=value;scene?.setExplore(value);document.body.classList.toggle('exploring',value);$('#explore').textContent=value?'Return to the story':'Explore 3D city';$('#home').hidden=!value;$('#view-instruction').textContent=value?'Drag to rotate. Click a building to inspect it.':'Scroll the page to follow the story.';if(!value)scene?.home();}
+function setExplore(value){explore=value;scene?.setExplore(value);document.body.classList.toggle('exploring',value);$('#explore').textContent=value?'Return to the story':'Explore 3D city';$('#home').hidden=!value;$('#view-instruction').textContent=value?'Drag to rotate. Click a building to inspect it.':HINT;if(!value){scene?.home();presentation?.refresh();}}
 $('#motion-toggle').onclick=()=>{paused=!paused;scene?.setPaused(paused);document.body.classList.toggle('motion-paused',paused);$('#motion-toggle').textContent=paused?'Resume animation':'Pause animation';$('#motion-toggle').setAttribute('aria-pressed',String(paused));};
 $('#explore').onclick=()=>setExplore(!explore);$('#hero-explore').onclick=()=>{setExplore(true);};$('#home').onclick=()=>scene?.home();$('#focus-place').onclick=()=>{$('#place-detail').close();setExplore(true);scene?.focus(activePlace);};
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{$('#announcement').textContent='Fullscreen is unavailable in this browser.';}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&explore&&!$('#place-detail').open)setExplore(false);});
 async function init(){if(compact.matches){$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Lightweight city view';return;}
- try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
+ try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});if(presentation)presentation.refresh();else syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
+$('#view-instruction').textContent=HINT;
+if(presenting)presentation=startPresentation({
+ apply:applyState,
+ blocked:()=>explore||$('#place-detail').open,
+ reduced:matchMedia('(prefers-reduced-motion: reduce)'),
+ announce:text=>{$('#announcement').textContent=text;},
+});
 syncSection();init();

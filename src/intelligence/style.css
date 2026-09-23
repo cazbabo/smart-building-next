@@ -348,3 +348,66 @@ body[data-stage=hero] #loading{color:#CFC3D8}
  .hero-start{background:#fff;border-color:#D8CBDF;color:var(--navy)}
  .hero-start:hover{background:#F4EFF7;border-color:#C044D9}
 }
+
+/* Presentation mode (present.js): the page stops scrolling and becomes a stage.
+   The opening is the hero over the night city; each chapter is one card on the
+   right over the same wash the scrolling narrative used, so the city still runs
+   on beneath the words with no seam. */
+html.presenting,body.presenting{overflow:hidden;height:100%;overscroll-behavior:none}
+.presenting .narrative-column,.presenting .page-footer{display:none}
+.presenting .hero{position:fixed;inset:86px 0 0;height:auto;z-index:4}
+body.presenting[data-stage=story] .hero{visibility:hidden}
+#present{position:fixed;top:86px;bottom:0;left:56%;right:0;z-index:5;display:flex;align-items:center;
+ padding:0 calc(5vw + 34px) 0 40px;pointer-events:none;transition:opacity .5s ease}
+#present::before{content:'';position:absolute;inset:0 0 0 -260px;z-index:-1;pointer-events:none;
+ background:linear-gradient(90deg,#FAF8FC00 0,#FAF8FC4F 95px,#FAF8FCC9 170px,#FAF8FC 220px);
+ backdrop-filter:blur(20px) saturate(.8);-webkit-backdrop-filter:blur(20px) saturate(.8);
+ -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 212px);mask-image:linear-gradient(90deg,transparent 0,#000 212px)}
+body[data-stage=hero] #present{opacity:0}
+body[data-stage=hero] #present .present-card{pointer-events:none}
+.present-card{pointer-events:auto;width:100%;max-width:620px;outline:none}
+/* Sizes follow the viewport's height as well as its width: a chapter has to fit
+   one screen on a 768-pixel laptop as well as on a 1080 display. */
+.present-card .section-phase{margin-bottom:min(2.6vh,26px)}
+.present-card h1{font-size:clamp(30px,min(3.3vw,5.8vh),60px);margin:0 0 min(2.8vh,26px)}
+.present-card .section-intro{font-size:clamp(15px,2.25vh,20px);line-height:1.62;margin:0 0 min(2.6vh,26px);max-width:38ch}
+.present-card .story-points li{padding:min(1.25vh,12px) 0}
+.present-card .story-points h2{font-size:clamp(15px,2.05vh,18px);margin-bottom:3px}
+.present-card .story-points p{font-size:clamp(13.5px,1.8vh,16px);line-height:1.55}
+.present-card .takeaway{font-size:clamp(13.5px,1.85vh,16px);margin:min(2.4vh,22px) 0 0;padding:9px 0 9px 16px}
+.present-districts{grid-template-columns:1fr 1fr 1fr;gap:7px;margin:min(1.5vh,14px) 0 0}
+.present-districts button{padding:10px 11px;font-size:13px}
+.card-nav{display:flex;align-items:center;gap:10px;margin-top:min(3vh,28px)}
+.card-nav button{font:inherit;border-radius:999px;border:1px solid #D8CBDF;background:#fff;color:var(--navy);height:42px;
+ transition:background .2s,border-color .2s,transform .2s}
+.card-back{width:42px;font-size:17px!important}
+.card-nav .card-next{display:flex;align-items:center;gap:12px;padding:0 20px;font-size:14px;font-weight:600;
+ background:var(--navy)!important;border-color:var(--navy)!important;color:#fff!important}
+.card-next span{font-size:16px;transition:transform .2s}
+.card-next:hover span{transform:translateX(3px)}
+.card-back:hover{border-color:#C044D9}
+.present-card>*{transition:opacity .22s ease,transform .22s ease}
+.present-card.leaving>*{opacity:0;transform:translateY(calc(var(--dir,1)*-14px))}
+.present-card.arrive>*{animation:card-in .72s cubic-bezier(.22,.68,.28,1) both}
+.present-card.arrive>:nth-child(2){animation-delay:.07s}
+.present-card.arrive>:nth-child(3){animation-delay:.14s}
+.present-card.arrive>:nth-child(4){animation-delay:.21s}
+.present-card.arrive>:nth-child(5){animation-delay:.28s}
+.present-card.arrive>:nth-child(6){animation-delay:.34s}
+@keyframes card-in{from{opacity:0;transform:translateY(calc(var(--dir,1)*24px))}}
+/* The rail: one dot per step, the chapter's name on hover or focus. */
+.present-rail{position:fixed;right:22px;top:calc(50% + 43px);transform:translateY(-50%);z-index:20;
+ display:flex;flex-direction:column;gap:14px}
+.present-rail button{position:relative;width:11px;height:11px;padding:0;border-radius:50%;background:transparent;
+ border:1.5px solid #9d86a8;transition:transform .25s,background .25s,border-color .25s}
+.present-rail button::after{content:'';position:absolute;inset:-8px}
+.present-rail button[aria-current=step]{background:var(--lime);border-color:#8dbb1e;transform:scale(1.35)}
+.present-rail button:hover{border-color:#C044D9}
+.present-rail span{position:absolute;right:22px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:12px;
+ background:#52205E;color:#fff;padding:5px 10px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .15s}
+.present-rail button:hover span,.present-rail button:focus-visible span{opacity:1}
+body[data-stage=hero] .present-rail button{border-color:#ffffff70}
+body[data-stage=hero] .present-rail button[aria-current=step]{border-color:var(--lime)}
+.exploring #present,.exploring .present-rail{display:none}
+@media(max-height:740px){.present-card .takeaway{display:none}}
+@media(prefers-reduced-motion:reduce){.present-card.arrive>*{animation:none}}

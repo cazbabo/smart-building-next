@@ -207,6 +207,49 @@ a smudge. Each one fades in and out over its own climb, so none pops at the top
 of the band, and the whole set dims with the night layer: over the pale story
 the same specks would read as dust on the screen.
 
+## Presentation
+
+On a desktop screen the story is presented, not scrolled: the opening, then one
+chapter per screen (`present.js`). The scrolling page never came to rest on a
+composition - stopped anywhere, it showed half a chapter with its heading cut by
+the header - and while the text scrolled, the city and its furniture stood still,
+so it read as a document with a picture beside it rather than as a story being
+told. Its hand-off from the opening also crossed a visible horizontal seam where
+the night layer had not yet faded but the narrative's wash had begun.
+
+- **One step at a time.** One wheel gesture, one key (arrows, Space, PageUp and
+  PageDown, Home, End, 1 to 8), one swipe, one click on the rail or the card's
+  Next button. Presenter clickers send PageUp and PageDown, so they work with no
+  setup.
+- **Chapters play.** Arriving at a chapter, the camera flies to its frame and the
+  chapter then plays itself once the camera is there: the routes connect, the
+  water rises from 1.20 to 1.60 m and the gates lift, the forecast grows. Stepping
+  back shows the previous chapter already played, the way it was left. Fades and
+  playback run off the clock, not the frame count, so a slow machine takes the
+  same time.
+- **One card per chapter.** Phase, title, intro, three points and the takeaway,
+  sized by the viewport's height as well as its width so every chapter fits one
+  screen from a 1366 by 768 laptop up (the takeaway gives way below 740 pixels
+  high). The card leaves and the next one arrives in reading order, from below
+  going forward and from above going back. Priorities shows the district buttons
+  in place of its points.
+- **The rail.** A dot per step on the right edge, the chapter's name on hover or
+  focus, the current one lime. It is how a presenter answers a question about an
+  earlier chapter.
+- **The URL follows the chapter**, so a link opens on it and a reload keeps the
+  place.
+
+A trackpad keeps sending momentum for a second or more after the fingers lift,
+and one flick first ran five chapters. After a step the wheel is treated as
+coasting until it goes quiet or a delta arrives larger than the ones before it -
+momentum only decays, so a push that grows is a new gesture - and timing uses
+each event's own timestamp, which a busy main thread does not stretch.
+
+Phones keep the scrolling page, which is what a phone is good at, and `?scroll`
+keeps it on any screen, for reading at a desk. Both modes drive the same state -
+chapter, how far it has played, how much of the opening is on screen - through
+one function in `app.js`.
+
 ## Story and interaction
 
 Eight real document sections: living city, fragmentation, Data Consolidation, IoT Data Integration, flood response, connected services, AI-Powered Intelligence and roadmap.
@@ -231,7 +274,7 @@ All values and device actions are illustrative. No live forecasting service, sen
 
 ## Implementation
 
-`story-state.js` is a lightweight shared telemetry function. `civic-motion.js` controls the animated meshes. `civic-model.js` builds the city; `kenney-kit.js` loads the kit and instances it; `landmarks.js` loads the Blender landmarks; `ground-ao.js` applies the baked contact shadows; `civic-post.js` owns post-processing and the quality guard; `civic-scene.js` manages camera, lighting and animation lifecycle. `app.js` owns the narrative, readout and accessible HTML controls.
+`story-state.js` is a lightweight shared telemetry function. `civic-motion.js` controls the animated meshes. `civic-model.js` builds the city; `kenney-kit.js` loads the kit and instances it; `landmarks.js` loads the Blender landmarks; `ground-ao.js` applies the baked contact shadows; `civic-post.js` owns post-processing and the quality guard; `present.js` runs the desktop presentation; `civic-scene.js` manages camera, lighting and animation lifecycle. `app.js` owns the narrative, readout and accessible HTML controls.
 
 `civic-motion.js` is untouched by the kit: it drives the same rotors, vehicles,
 gates, water surface and overlay meshes it always has. Kit buildings are
@@ -282,6 +325,7 @@ The built files are committed; none of this runs in `npm run build`.
 - `node tests/kenney-city.test.mjs` also loads the landmarks under Node: every manifest entry decodes (meshopt, quantised), every node has geometry and finite bounds, the rotor's vertices centre on its hub, each gate leaf is built round its centre, three turbines turn, five gates lift to 2.4 at the height of the flood and settle back to 1.5.
 - With the kit and the landmarks: 506 meshes, 747 instances, 202,016 triangles. Without either: 1,585 meshes, 108,582 triangles. Landmarks: command center 12.0k triangles, city hall 10.8k, works 10.2k, barrier 6.9k, transit 4.6k, turbine 1.9k, solar table 0.6k; 2.2 MB on disk with their AO maps and textures.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
+- Presentation driven in Chromium: a replayed trackpad flick with 1.5 s of momentum is one step, a fresh push during the coast is a second, three mouse-wheel notches are three, and the same upward; PageDown, the rail and Home reach the right chapters; the flood chapter plays 1.20, 1.31, 1.51, 1.60 m on its own; every card fits its stage at 1366 by 768 (tightest 670 of 682 pixels), 1440 by 900 and 1920 by 1080. Under reduced motion each chapter appears already played. Phones and `?scroll` keep the scrolling page, which still reaches the flood and AI chapters by scroll position.
 - Rendered in Chromium at 1600 by 900 and 1366 by 768, all eight chapters: WebGL initialises, the whole city sits in frame with nothing clipped, the narrative reads over it, and scrolling to the flood chapter drives both the scene and the readout. At the top the night layer is fully on and the motes drift over it; at the Data chapter the night reads 0 and no mote is on screen. No page errors and no horizontal overflow at 390, 1366 or 1600.
 - Floating chrome measured against its own pixels, animation paused, the glyphs made transparent so the sample is the ground the text sits on and the rounded corners excluded: chapter name 10.8 to 11.5:1, mode label 6.9 to 7.4:1, fine print 6.3 to 7.4:1 across every chapter at both widths. All above the 4.5:1 floor; before the pills the first two ran to 1.00:1.
 - Compact layout at 390 by 844: the opening reads plum on the pale page at 11.5:1, the night layer is absent, and the city preview sits on the page rather than under it.
