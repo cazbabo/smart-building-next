@@ -227,12 +227,28 @@ the night layer had not yet faded but the narrative's wash had begun.
   back shows the previous chapter already played, the way it was left. Fades and
   playback run off the clock, not the frame count, so a slow machine takes the
   same time.
-- **One card per chapter.** Phase, title, intro, three points and the takeaway,
-  sized by the viewport's height as well as its width so every chapter fits one
-  screen from a 1366 by 768 laptop up (the takeaway gives way below 740 pixels
-  high). The card leaves and the next one arrives in reading order, from below
-  going forward and from above going back. Priorities shows the district buttons
-  in place of its points.
+- **Layout: the city fills the stage, the words sit in a band along the
+  bottom.** The first presentation put a card on the right over a wash, which
+  cut the model in two and set a document beside a picture. Now the camera
+  centres the city and lifts it above a band that rises out of the page colour:
+  phase, title and a short lede on the left, the three points spread across the
+  right, the takeaway under them. The lede is a shorter brief written for the
+  band (`present` in `long-story.js`); the scrolling page and phones keep the full
+  intro. The band is sized by viewport height too, so it keeps to the bottom third
+  from 1366 by 768 to 1920 by 1080 (the takeaway gives way below 800 pixels high,
+  the fine print underneath still says every value is mock data).
+- **Numbered pins.** Each point has a pin on the model - the water gauge, the road
+  beside the waterway, the command center's consoles - projected through the
+  camera every frame like the district names, dropping in once the camera has
+  arrived. Hovering a point lights its pin and the other way round. Pins go down
+  before district names, which give way to them, and none is placed inside the
+  band's fade. The presentation has its own chapter framings, since a frame chosen
+  for a city pushed aside does not hold the same subject once it is centred.
+- **Furniture.** The live readout becomes a compact chip top left; Back and Next
+  sit top right; Explore, Pause and the fine print sit in one row at the foot.
+  Those last two live in the canvas's layer, which the band covers, so the
+  presentation moves them into the band's own layer - they were ghosted and
+  unclickable under it.
 - **The rail.** A dot per step on the right edge, the chapter's name on hover or
   focus, the current one lime. It is how a presenter answers a question about an
   earlier chapter.
@@ -325,7 +341,7 @@ The built files are committed; none of this runs in `npm run build`.
 - `node tests/kenney-city.test.mjs` also loads the landmarks under Node: every manifest entry decodes (meshopt, quantised), every node has geometry and finite bounds, the rotor's vertices centre on its hub, each gate leaf is built round its centre, three turbines turn, five gates lift to 2.4 at the height of the flood and settle back to 1.5.
 - With the kit and the landmarks: 506 meshes, 747 instances, 202,016 triangles. Without either: 1,585 meshes, 108,582 triangles. Landmarks: command center 12.0k triangles, city hall 10.8k, works 10.2k, barrier 6.9k, transit 4.6k, turbine 1.9k, solar table 0.6k; 2.2 MB on disk with their AO maps and textures.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
-- Presentation driven in Chromium: a replayed trackpad flick with 1.5 s of momentum is one step, a fresh push during the coast is a second, three mouse-wheel notches are three, and the same upward; PageDown, the rail and Home reach the right chapters; the flood chapter plays 1.20, 1.31, 1.51, 1.60 m on its own; every card fits its stage at 1366 by 768 (tightest 670 of 682 pixels), 1440 by 900 and 1920 by 1080. Under reduced motion each chapter appears already played. Phones and `?scroll` keep the scrolling page, which still reaches the flood and AI chapters by scroll position.
+- Presentation driven in Chromium: a replayed trackpad flick with 1.5 s of momentum is one step, a fresh push during the coast is a second, three mouse-wheel notches are three, and the same upward; PageDown, the rail and Home reach the right chapters; the flood chapter plays 1.20, 1.31, 1.51, 1.60 m on its own; the band keeps to the bottom third of the stage at 1366 by 768, 1600 by 900 and 1920 by 1080 for every chapter, every pin is on screen and clear of the band at 1366 and 1600, and Explore, Pause and Return to the story take clicks. Under reduced motion each chapter appears already played. Phones and `?scroll` keep the scrolling page, which still reaches the flood and AI chapters by scroll position.
 - Rendered in Chromium at 1600 by 900 and 1366 by 768, all eight chapters: WebGL initialises, the whole city sits in frame with nothing clipped, the narrative reads over it, and scrolling to the flood chapter drives both the scene and the readout. At the top the night layer is fully on and the motes drift over it; at the Data chapter the night reads 0 and no mote is on screen. No page errors and no horizontal overflow at 390, 1366 or 1600.
 - Floating chrome measured against its own pixels, animation paused, the glyphs made transparent so the sample is the ground the text sits on and the rounded corners excluded: chapter name 10.8 to 11.5:1, mode label 6.9 to 7.4:1, fine print 6.3 to 7.4:1 across every chapter at both widths. All above the 4.5:1 floor; before the pills the first two ran to 1.00:1.
 - Compact layout at 390 by 844: the opening reads plum on the pale page at 11.5:1, the night layer is absent, and the city preview sits on the page rather than under it.

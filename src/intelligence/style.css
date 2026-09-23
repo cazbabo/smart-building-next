@@ -357,45 +357,66 @@ html.presenting,body.presenting{overflow:hidden;height:100%;overscroll-behavior:
 .presenting .narrative-column,.presenting .page-footer{display:none}
 .presenting .hero{position:fixed;inset:86px 0 0;height:auto;z-index:4}
 body.presenting[data-stage=story] .hero{visibility:hidden}
-#present{position:fixed;top:86px;bottom:0;left:56%;right:0;z-index:5;display:flex;align-items:center;
- padding:0 calc(5vw + 34px) 0 40px;pointer-events:none;transition:opacity .5s ease}
-#present::before{content:'';position:absolute;inset:0 0 0 -260px;z-index:-1;pointer-events:none;
- background:linear-gradient(90deg,#FAF8FC00 0,#FAF8FC4F 95px,#FAF8FCC9 170px,#FAF8FC 220px);
- backdrop-filter:blur(20px) saturate(.8);-webkit-backdrop-filter:blur(20px) saturate(.8);
- -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 212px);mask-image:linear-gradient(90deg,transparent 0,#000 212px)}
-body[data-stage=hero] #present{opacity:0}
+/* Layout A: the city fills the stage and the words sit in a band along the
+   bottom, the title and lede on the left and the points spread to the right.
+   The band rises out of the page colour, so the city runs on into it rather
+   than stopping at an edge. */
+#present{position:fixed;left:0;right:0;bottom:0;z-index:5;pointer-events:none;transition:opacity .5s ease;
+ padding:clamp(56px,9vh,96px) calc(64px + 24px) clamp(64px,8.5vh,84px) 64px}
+#present::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;
+ background:linear-gradient(to top,#FAF8FC 0,#FAF8FCF2 55%,#FAF8FCA8 80%,#FAF8FC00 100%)}
+body[data-stage=hero] #present,body[data-stage=hero] .present-nav{opacity:0;pointer-events:none}
 body[data-stage=hero] #present .present-card{pointer-events:none}
-.present-card{pointer-events:auto;width:100%;max-width:620px;outline:none}
-/* Sizes follow the viewport's height as well as its width: a chapter has to fit
-   one screen on a 768-pixel laptop as well as on a 1080 display. */
-.present-card .section-phase{margin-bottom:min(2.6vh,26px)}
-.present-card h1{font-size:clamp(30px,min(3.3vw,5.8vh),60px);margin:0 0 min(2.8vh,26px)}
-.present-card .section-intro{font-size:clamp(15px,2.25vh,20px);line-height:1.62;margin:0 0 min(2.6vh,26px);max-width:38ch}
-.present-card .story-points li{padding:min(1.25vh,12px) 0}
-.present-card .story-points h2{font-size:clamp(15px,2.05vh,18px);margin-bottom:3px}
-.present-card .story-points p{font-size:clamp(13.5px,1.8vh,16px);line-height:1.55}
-.present-card .takeaway{font-size:clamp(13.5px,1.85vh,16px);margin:min(2.4vh,22px) 0 0;padding:9px 0 9px 16px}
-.present-districts{grid-template-columns:1fr 1fr 1fr;gap:7px;margin:min(1.5vh,14px) 0 0}
-.present-districts button{padding:10px 11px;font-size:13px}
-.card-nav{display:flex;align-items:center;gap:10px;margin-top:min(3vh,28px)}
-.card-nav button{font:inherit;border-radius:999px;border:1px solid #D8CBDF;background:#fff;color:var(--navy);height:42px;
- transition:background .2s,border-color .2s,transform .2s}
-.card-back{width:42px;font-size:17px!important}
-.card-nav .card-next{display:flex;align-items:center;gap:12px;padding:0 20px;font-size:14px;font-weight:600;
- background:var(--navy)!important;border-color:var(--navy)!important;color:#fff!important}
-.card-next span{font-size:16px;transition:transform .2s}
-.card-next:hover span{transform:translateX(3px)}
-.card-back:hover{border-color:#C044D9}
-.present-card>*{transition:opacity .22s ease,transform .22s ease}
-.present-card.leaving>*{opacity:0;transform:translateY(calc(var(--dir,1)*-14px))}
-.present-card.arrive>*{animation:card-in .72s cubic-bezier(.22,.68,.28,1) both}
-.present-card.arrive>:nth-child(2){animation-delay:.07s}
-.present-card.arrive>:nth-child(3){animation-delay:.14s}
-.present-card.arrive>:nth-child(4){animation-delay:.21s}
-.present-card.arrive>:nth-child(5){animation-delay:.28s}
-.present-card.arrive>:nth-child(6){animation-delay:.34s}
-@keyframes card-in{from{opacity:0;transform:translateY(calc(var(--dir,1)*24px))}}
-/* The rail: one dot per step, the chapter's name on hover or focus. */
+.present-card{pointer-events:auto;outline:none;display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:clamp(32px,4.5vw,72px);align-items:end}
+.present-card .section-phase{margin-bottom:min(1.6vh,14px)}
+.present-card h1{font-size:clamp(30px,min(3.3vw,5.6vh),56px);line-height:1.04;margin:0 0 min(1.8vh,16px);text-wrap:balance}
+.band-brief{font-size:clamp(14.5px,2vh,17px);line-height:1.6;color:#75617C;margin:0;max-width:48ch;text-wrap:pretty}
+.band-points{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(18px,2vw,30px)}
+.band-points li{border-top:2px solid #E7DEEB;padding-top:min(1.6vh,14px);transition:border-color .2s}
+.band-points li.hot{border-color:#52205E}
+.band-points em{font-style:normal;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;
+ background:#52205E;color:#C7FF3D;font-size:13px;font-weight:700;margin-bottom:min(1.1vh,10px)}
+.band-points h2{font-size:clamp(14.5px,1.95vh,17px);margin:0 0 4px;line-height:1.3}
+.band-points p{font-size:clamp(13px,1.7vh,14.5px);line-height:1.5;color:#75617C;margin:0}
+.band-takeaway{margin:min(2.2vh,20px) 0 0;padding:0 0 0 14px;border-left:3px solid var(--lime);font-size:clamp(13px,1.7vh,14.5px);line-height:1.5;color:#633C70}
+#ai .band-takeaway,body[data-chapter=ai] .band-takeaway{border-left-color:#F05BB5}
+.band-districts{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.band-districts button{text-align:left;display:flex;justify-content:space-between;gap:8px;align-items:center;background:#FFFFFFD9;
+ border:1px solid #E3D6EA;border-radius:8px;padding:9px 11px;font-size:13px;line-height:1.3}
+.band-districts button:hover{border-color:#C044D9;background:#fff}
+.band-districts button>span{color:#BD51B7}
+/* Back and Next, top right. */
+.present-nav{position:fixed;top:106px;right:64px;z-index:20;display:flex;align-items:center;gap:10px;transition:opacity .4s}
+.present-hint{font-size:12px;color:#76627E;margin-right:4px}
+.present-nav button{font:inherit;border-radius:999px;border:1px solid #D8CBDF;background:#fff;color:var(--navy);height:42px;transition:border-color .2s}
+.present-nav .card-back{width:42px;font-size:16px}
+.present-nav .card-back:hover{border-color:#C044D9}
+.present-nav .card-next{display:flex;align-items:center;gap:12px;padding:0 20px;font-size:14px;background:var(--navy);border-color:var(--navy);color:#fff}
+.present-nav .card-next b{font-weight:600}
+.present-nav .card-next span{transition:transform .2s}
+.present-nav .card-next:hover span{transform:translateX(3px)}
+/* Numbered pins on the model, one per point. */
+.present-pin{position:absolute;z-index:2;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#52205E;color:#C7FF3D;
+ display:grid;place-items:center;font:700 15px/1 'DM Sans',sans-serif;pointer-events:auto;cursor:default;
+ box-shadow:0 0 0 6px #52205E33,0 0 0 13px #52205E12,0 6px 16px #52205E40;transition:transform .2s,box-shadow .2s}
+.present-pin.drop{animation:pin-drop .55s cubic-bezier(.3,1.5,.5,1) both}
+.present-pin.hot{transform:scale(1.18);box-shadow:0 0 0 7px #C7FF3D88,0 0 0 15px #52205E1A,0 6px 16px #52205E40}
+@keyframes pin-drop{from{opacity:0;transform:translateY(-18px) scale(.6)}}
+body[data-stage=hero] .present-pin,.exploring .present-pin{display:none}
+/* The stage furniture moves out of the band's way: the live readout becomes a
+   compact chip top left, where the chapter heading was (the band names the
+   chapter now), and the controls and fine print sit in one row at the foot. */
+.presenting .view-heading{display:none}
+.presenting .scene-readout{top:20px;bottom:auto;left:64px;width:auto;min-height:0;padding:12px 18px;border-radius:14px;gap:18px}
+.presenting .scene-readout strong{font-size:22px;margin:2px 0 0}
+.presenting .scene-readout p,.presenting .scene-progress{display:none}
+.presenting .activity-symbol{height:26px}
+.presenting .view-controls{position:absolute;left:auto;right:88px;bottom:16px;pointer-events:auto}
+.presenting .view-controls button{padding:8px 13px}
+.presenting .view-note{position:absolute;left:64px;bottom:24px;max-width:calc(100% - 440px);pointer-events:auto;
+ background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;padding:0}
+.presenting.exploring .view-note{left:5vw}
+.exploring .present-nav{display:none}
 .present-rail{position:fixed;right:22px;top:calc(50% + 43px);transform:translateY(-50%);z-index:20;
  display:flex;flex-direction:column;gap:14px}
 .present-rail button{position:relative;width:11px;height:11px;padding:0;border-radius:50%;background:transparent;
@@ -408,6 +429,18 @@ body[data-stage=hero] #present .present-card{pointer-events:none}
 .present-rail button:hover span,.present-rail button:focus-visible span{opacity:1}
 body[data-stage=hero] .present-rail button{border-color:#ffffff70}
 body[data-stage=hero] .present-rail button[aria-current=step]{border-color:var(--lime)}
-.exploring #present,.exploring .present-rail{display:none}
-@media(max-height:740px){.present-card .takeaway{display:none}}
+.exploring .present-card,.exploring #present::before,.exploring .present-rail{display:none}
+/* Explore raises the canvas over the page; the controls ride above it. */
+.presenting.exploring #present{z-index:30}
+@media(max-height:800px){.band-takeaway{display:none}}
 @media(prefers-reduced-motion:reduce){.present-card.arrive>*{animation:none}}
+.present-card>*{transition:opacity .22s ease,transform .22s ease}
+.present-card.leaving>*{opacity:0;transform:translateY(calc(var(--dir,1)*-12px))}
+.present-card.arrive>*{animation:card-in .72s cubic-bezier(.22,.68,.28,1) both}
+.present-card.arrive>.band-side{animation-delay:.12s}
+.present-card.arrive .band-points li{animation:card-in .6s cubic-bezier(.22,.68,.28,1) both}
+.present-card.arrive .band-points li:nth-child(1){animation-delay:.2s}
+.present-card.arrive .band-points li:nth-child(2){animation-delay:.28s}
+.present-card.arrive .band-points li:nth-child(3){animation-delay:.36s}
+@keyframes card-in{from{opacity:0;transform:translateY(calc(var(--dir,1)*20px))}}
+@media(prefers-reduced-motion:reduce){.present-card.arrive>*,.present-card.arrive .band-points li,.present-pin.drop{animation:none}}

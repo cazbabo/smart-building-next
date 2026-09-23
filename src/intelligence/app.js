@@ -100,6 +100,26 @@ const CHAPTER_LABELS={
  ai:        ['command','water','transit'],
  roadmap:   ['command'],
 };
+// Chapter framings for the presentation: the city centred above the band, each
+// holding the places its pins point at. [look x, y, z, span]
+const PRESENT_FRAMES={
+ overview:  [-14,3,2,126],
+ fragmented:[-18,4,8,120],
+ foundation:[-26,6,2,126],
+ iot:       [-8,4,0,118],
+ flood:     [-24,6,10,122],
+ priorities:[-14,3,2,126],
+ ai:        [-24,6,8,126],
+ roadmap:   [-16,4,2,128],
+};
+// The presentation's numbered pins, one per point of the chapter on screen.
+const pinEls=[0,1,2].map(i=>{const el=document.createElement('span');el.className='present-pin';el.textContent=i+1;el.hidden=true;el.setAttribute('aria-hidden','true');return el;});
+let pinOn=[false,false,false];
+const pins={
+ points:[],
+ set(points){pins.points=points??[];pinOn=[0,1,2].map(i=>!!points?.[i]);scene?.setPins(points);pinEls.forEach((el,i)=>{el.classList.remove('drop');if(pinOn[i]){void el.offsetWidth;el.style.animationDelay=`${i*.12}s`;el.classList.add('drop');}});},
+ highlight(i){pinEls.forEach((el,j)=>el.classList.toggle('hot',j===i));document.querySelectorAll('.band-points [data-pin]').forEach((li,j)=>li.classList.toggle('hot',j===i));},
+};
 function placeLabels(labels){
  const view=$('#city-view'),vw=view.clientWidth||1,vh=view.clientHeight||1;
  // The narrative scrolls over the right of the same canvas and sits above the
@@ -108,16 +128,29 @@ function placeLabels(labels){
  // not clear the text is dropped. The limit is the narrative's own left edge
  // less part of the scrim's 260px ramp, not the column edge: a chip that lands
  // inside the ramp is washed pale long before the text begins.
- const edge=presentation?presentation.edge:$('.narrative-column').offsetLeft;
- const column=innerWidth>800?(edge-165)/vw*100:101;
+ // In the presentation the text is a band along the bottom instead: nothing
+ // stands to the right, and labels must stay above the band.
+ const column=presentation?101:innerWidth>800?($('.narrative-column').offsetLeft-165)/vw*100:101;
+ // bandTop is in page pixels; the view starts below the header.
+ const floor=presentation?(presentation.bandTop-$('.visual-column').offsetTop)/vh*100-1:104;
  // The chapter heading floats over the top-left of the same stage. A label
  // landing on it made both unreadable, so it is seeded as already taken. Its
  // width is the heading's own - a constant generous enough for the longest
  // chapter name swallowed the command center's label at narrower viewports -
  // and offsetLeft/offsetWidth are already relative to the same box the labels
  // are placed in, so this costs no more layout than the two reads above.
- const head=$('.view-heading');
+ const head=presentation?$('.scene-readout'):$('.view-heading');
  const taken=[[0,0,(head.offsetLeft+head.offsetWidth+10)/vw*100,(head.offsetTop+head.offsetHeight+8)/vh*100]];
+ // Pins go down first: a pin is what a point on screen is about, a district
+ // name only context, so a name that would cover a pin gives way.
+ for(const [i,pin] of pinEls.entries()){
+  const spot=labels[`pin${i}`];
+  pin.hidden=!spot||!pinOn[i]||spot[1]>floor||spot[1]<2;
+  if(pin.hidden)continue;
+  pin.style.left=`${spot[0]}%`;pin.style.top=`${spot[1]}%`;
+  const rx=20/vw*100,ry=20/vh*100;
+  taken.push([spot[0]-rx,spot[1]-ry,spot[0]+rx,spot[1]+ry]);
+ }
  const allowed=explore?null:CHAPTER_LABELS[current]??LABEL_ORDER;
  for(const id of LABEL_ORDER){
   const label=$(`.name-${id}`),spot=labels[id];
@@ -134,7 +167,7 @@ function placeLabels(labels){
   const top=y-h<0?y+1:y-h;
   const box=left?[x-w-1,top,x-1,top+h]:[x-w/2,top,x+w/2,top+h];
   const clash=taken.some(o=>box[0]<o[2]&&box[2]>o[0]&&box[1]<o[3]&&box[3]>o[1]);
-  label.hidden=clash||box[0]<-4||box[2]>column-1||box[1]<0||box[3]>104;
+  label.hidden=clash||box[0]<-4||box[2]>column-1||box[1]<0||box[3]>floor;
   if(label.hidden)continue;
   taken.push(box);
   label.style.left=`${left?x-1:x}%`;label.style.top=`${top}%`;label.style.bottom='auto';
@@ -151,9 +184,11 @@ $('#explore').onclick=()=>setExplore(!explore);$('#hero-explore').onclick=()=>{s
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{$('#announcement').textContent='Fullscreen is unavailable in this browser.';}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&explore&&!$('#place-detail').open)setExplore(false);});
 async function init(){if(compact.matches){$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Lightweight city view';return;}
- try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});if(presentation)presentation.refresh();else syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
+ try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});if(presentation){scene.setLayout({bias:0,lift:.1,frames:PRESENT_FRAMES});scene.setPins(pins.points);presentation.refresh();}else syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
 $('#view-instruction').textContent=HINT;
+if(presenting){$('#city-view').append(...pinEls);document.addEventListener('pointerover',e=>{const pin=e.target.closest?.('.present-pin');if(pin)pins.highlight(pinEls.indexOf(pin));else if(!e.target.closest?.('[data-pin]'))pins.highlight(-1);});}
 if(presenting)presentation=startPresentation({
+ pins,
  apply:applyState,
  blocked:()=>explore||$('#place-detail').open,
  reduced:matchMedia('(prefers-reduced-motion: reduce)'),

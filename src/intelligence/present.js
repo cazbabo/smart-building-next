@@ -1,4 +1,4 @@
-import {sections,places} from './long-story.js';
+import {sections,places,present} from './long-story.js';
 // Presentation mode. On a desktop screen the story is a sequence of composed
 // scenes rather than a long page: the opening, then one chapter per screen. A
 // scrolling page never came to rest on a composition - stopped anywhere, it
@@ -18,30 +18,43 @@ const STEPS=['opening',...sections.map(s=>s.id)];
 const PLAY={foundation:3.8,iot:2.2,flood:5.2,ai:4.4};
 const CAMERA_LEAD=.55,NIGHT_FADE=.9,CARD_OUT=.22;
 
-function card(index){
- const s=sections[index],next=sections[index+1];
- const districts=s.id==='priorities'
-  ?`<div class="district-list present-districts">${Object.entries(places).filter(([id])=>id!=='command').map(([id,p])=>`<button data-place="${id}">${p.name}<span>+</span></button>`).join('')}</div>`
-  :`<ol class="story-points">${s.points.map(([head,body],j)=>`<li><span>${String(j+1).padStart(2,'0')}</span><div><h2>${head}</h2><p>${body}</p></div></li>`).join('')}</ol>`;
- return `<div class="section-phase"><span>${String(index+1).padStart(2,'0')} / 08</span>${s.phase}</div>
-  <h1 id="present-title">${s.title.replaceAll('\n','<br>')}</h1>
-  <p class="section-intro">${s.intro}</p>
-  ${districts}
-  <div class="takeaway">${s.takeaway}</div>
-  <div class="card-nav">
-   <button class="card-back" data-go="${index}" aria-label="Previous chapter">↑</button>
-   <button class="card-next" data-go="${index+2}">${next?`Next · ${next.phase}`:'Back to the start'}<span>${next?'→':'↺'}</span></button>
-  </div>`;
+// A chapter is laid out like a film frame: the city fills the screen and the
+// words sit in a band along the bottom - the title and a short lede on the
+// left, the three points spread across the right. Each point has a numbered pin
+// on the model, so the text says where on the city it is about instead of
+// leaving the audience to connect a list on one side to a picture on the other.
+function band(index){
+ const s=sections[index],brief=present[s.id];
+ const right=s.id==='priorities'
+  ?`<div class="band-districts">${Object.entries(places).filter(([id])=>id!=='command').map(([id,p])=>`<button data-place="${id}">${p.name}<span>+</span></button>`).join('')}</div>`
+  :`<ol class="band-points">${s.points.map(([head,body],j)=>`<li data-pin="${j}"><em>${j+1}</em><h2>${head.replace(/^\d+\.\s*/,'')}</h2><p>${body}</p></li>`).join('')}</ol>`;
+ return `<div class="band-lead">
+   <div class="section-phase"><span>${String(index+1).padStart(2,'0')} / 08</span>${s.phase}</div>
+   <h1 id="present-title">${s.title.replaceAll('\n','<br>')}</h1>
+   <p class="band-brief">${brief.brief}</p>
+  </div>
+  <div class="band-side">${right}<p class="band-takeaway">${s.takeaway}</p></div>`;
 }
 
-export function startPresentation({apply,blocked,reduced,announce}){
+export function startPresentation({apply,blocked,reduced,announce,pins}){
  document.documentElement.classList.add('presenting');document.body.classList.add('presenting');
  const stage=document.createElement('div');stage.id='present';
  stage.innerHTML=`<article class="present-card" aria-labelledby="present-title" tabindex="-1"></article>`;
+ // Back and Next sit top right, where the eye goes when a scene has been read.
+ const nav=document.createElement('div');nav.className='present-nav';
+ nav.innerHTML=`<span class="present-hint">Space or →</span><button class="card-back" aria-label="Previous chapter">←</button><button class="card-next"><b></b><span>→</span></button>`;
  const rail=document.createElement('nav');rail.className='present-rail';rail.setAttribute('aria-label','Chapters');
  rail.innerHTML=STEPS.map((id,i)=>`<button data-go="${i}" aria-label="${i?`${String(i).padStart(2,'0')} ${sections[i-1].phase}`:'Opening'}"><span>${i?`${String(i).padStart(2,'0')} · ${sections[i-1].phase}`:'Opening'}</span></button>`).join('');
- document.querySelector('.experience-grid').append(stage,rail);
+ document.querySelector('.experience-grid').append(stage,nav,rail);
+ // The controls and the fine print live in the canvas's layer, which the band
+ // covers; they move into the band's so they stay on top and clickable.
+ stage.append(document.querySelector('.view-controls'),document.querySelector('.view-note'));
+ // Hovering a point lights its pin, and the other way round.
+ stage.addEventListener('pointerover',e=>{const li=e.target.closest('[data-pin]');pins.highlight(li?+li.dataset.pin:-1);});
+ stage.addEventListener('pointerleave',()=>pins.highlight(-1));
  const cardEl=stage.firstElementChild;
+ let fadeTop=0;
+ new ResizeObserver(()=>{fadeTop=stage.offsetTop+parseFloat(getComputedStyle(stage).paddingTop)*.45;}).observe(stage);
 
  let step=0,night=1,nightTarget=1,nightFrom=1,nightStart=0,chapter='overview',progress=0;
  let arrived=0,playFrom=0,playing=false,frame=0,swap=0;
@@ -73,9 +86,18 @@ export function startPresentation({apply,blocked,reduced,announce}){
  function showCard(index,direction){
   clearTimeout(swap);
   cardEl.style.setProperty('--dir',direction);
-  if(index<0){cardEl.classList.add('leaving');return;}
+  if(index<0){cardEl.classList.add('leaving');pins.set([]);return;}
+  const next=sections[index+1];
+  nav.querySelector('.card-back').dataset.go=index;
+  const button=nav.querySelector('.card-next');button.dataset.go=index+2;
+  button.querySelector('b').textContent=next?`Next · ${next.phase}`:'Back to the start';
+  button.querySelector('span').textContent=next?'→':'↺';
+  // Pins drop in once the camera has arrived, not while it is still flying.
+  pins.set([]);
+  const drop=()=>pins.set(present[sections[index].id].pins);
+  clearTimeout(showCard.pin);showCard.pin=setTimeout(drop,motionless()?0:(CAMERA_LEAD+.35)*1000);
   const place=()=>{
-   cardEl.innerHTML=card(index);cardEl.classList.remove('leaving','arrive');
+   cardEl.innerHTML=band(index);cardEl.classList.remove('leaving','arrive');
    void cardEl.offsetWidth;cardEl.classList.add('arrive');
   };
   if(motionless()||!cardEl.innerHTML){place();return;}
@@ -169,7 +191,9 @@ export function startPresentation({apply,blocked,reduced,announce}){
   /** Re-applies the state, after Explore has had the camera. */
   refresh(){render();},
   get step(){return step;},
-  /** The narrative's left edge, which labels on the model keep clear of. */
-  get edge(){return stage.offsetLeft;},
+  /** The top of the text band, which labels on the model keep clear of. */
+  // Measured from where the fade above the band is still light enough to read
+  // a pin through, not from the text itself.
+  get bandTop(){return fadeTop;},
  };
 }

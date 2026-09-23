@@ -9,7 +9,7 @@ import {loadGroundAO,applyGroundAO} from './ground-ao.js';
 export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  let renderer;
  try {renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}
- catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},setCentred(){},setNight(){},home(){},focus(){}};}
+ catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},setCentred(){},setNight(){},setLayout(){},setPins(){},home(){},focus(){}};}
  // The kit is the city's architecture; if it cannot be fetched the scene still
  // builds from procedural geometry rather than dropping to the static poster.
  // Landmarks are the same: without them the procedural stand-ins are drawn.
@@ -130,14 +130,17 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   // brightest thing in the opening once bloom is on, and it was cut off.
   hero:      [-16,-15,  1, 136],
  };
+ let frames=FRAMES;
  const FIT=.79;                   // vertical extent as a share of the frame width
  const goal=new T.Vector3(),look=new T.Vector3();
  let centred=false,chapter='overview',night=0;
- let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12;
+ let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12,lift=0,layoutBias=.12,layoutLift=0,pins=[];
  // Pointer parallax. The camera swings a little around the city as the cursor
  // crosses the page, which is what gives a still isometric model any sense of
  // depth. Explore drives the camera itself, so it opts out.
  const UP=new T.Vector3(0,1,0),seat=new T.Vector3(),lens=new T.Vector3();
+ // Up on screen, in world space: world up with the view direction taken out.
+ const SCREEN_UP=(()=>{const n=OFFSET.clone().normalize();return UP.clone().addScaledVector(n,-n.y).normalize();})();
  let wantX=0,wantY=0,swingX=0,swingY=0;
  function draw(now){
   scheduled=false;if(document.hidden||!visible){last=0;return;}
@@ -156,7 +159,11 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
    frame();
   }
   city.update(time,dt||1/30,!moving);drift(time);post.render(night,moving);
-  onLabels?.(Object.fromEntries(Object.entries(city.locations).map(([id,at])=>{const p=new T.Vector3(...at);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
+  // District labels sit a little above each district; pins sit exactly on
+  // the point they mark.
+  const marks=Object.entries(city.locations).map(([id,at])=>[id,at,3]);
+  pins.forEach((at,i)=>{if(at)marks.push([`pin${i}`,at,0]);});
+  onLabels?.(Object.fromEntries(marks.map(([id,at,up])=>{const p=new T.Vector3(...at);p.y+=up;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
   if(moving||settling)invalidate();
  }
  function invalidate(){if(!scheduled&&!document.hidden&&visible){scheduled=true;requestAnimationFrame(draw);}}
@@ -174,8 +181,12 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   // The narrative scrolls over the right of the same canvas, so the city is
   // pushed left of centre by that much of the frame and the text lands on empty
   // ground. Explore has no narrative over it and keeps the city centred.
+  // The presentation instead keeps the city centred and lifts it: its text
+  // sits in a band along the bottom, so the model moves up by that share of
+  // the frame's height.
   const shift=explore?0:horizontal*bias;
-  lens.copy(look).addScaledVector(RIGHT,shift);
+  const raise=explore?0:lift*horizontal*h/w;
+  lens.copy(look).addScaledVector(RIGHT,shift).addScaledVector(SCREEN_UP,-raise);
   seat.copy(lens).add(OFFSET);
   controls.target.copy(lens);
   aim();
@@ -189,10 +200,10 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   camera.position.copy(lens).add(arm);
   camera.lookAt(lens);
  }
- function home(){bias=.12;aimAt('overview',true);controls.update();}
+ function home(){bias=layoutBias;lift=layoutLift;aimAt('overview',true);controls.update();}
  /** Points the camera at a chapter's frame; `now` snaps instead of gliding. */
  function aimAt(id,now=false){
-  const [x,y,z,width]=FRAMES[id]??FRAMES.overview;
+  const [x,y,z,width]=frames[id]??frames.overview;
   goal.set(x,y,z);goalSpan=width;
   if(now||reduced.matches){look.copy(goal);span=goalSpan;}
   resize();
@@ -216,17 +227,23 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  return {
   setStage(id,progress=0){chapter=id;city.setStage(id,progress);if(!explore&&!centred)aimAt(id);invalidate();},
   setPaused(value){paused=value;last=0;invalidate();},
+  /** Where the story's text sits: bias pushes the city sideways, lift raises it. */
+  // A layout brings its own chapter framings: a frame chosen for a city pushed
+  // aside does not hold the same subject once the city is centred and lifted.
+  setLayout({bias:b=.12,lift:l=0,frames:f={}}){layoutBias=b;layoutLift=l;frames={...FRAMES,...f};if(!centred){bias=b;lift=l;}aimAt(centred?'hero':chapter);},
+  /** World points to project for the chapter's numbered pins. */
+  setPins(points){pins=points??[];invalidate();},
   setExplore(value){explore=value;controls.enabled=value;resize();},home,
   // The opening has no narrative beside the city, so nothing to make room for,
   // and its own framing lifts the model above the headline.
   setCentred(value){
    if(value===centred)return;
-   centred=value;bias=value?0:.12;
+   centred=value;bias=value?0:layoutBias;lift=value?0:layoutLift;
    if(value)aimAt('hero');else aimAt(chapter);
   },
   // How much of the opening is still on screen, so the motes go with the night
   // layer they drift against rather than switching off at a threshold.
   setNight(value){const next=Math.max(0,Math.min(1,value));if(Math.abs(next-night)<.004)return;night=next;invalidate();},
-  focus(id){const pos=city.locations[id];if(!pos)return;goalSpan=span=id==='command'?58:74;bias=explore?0:.12;goal.set(...pos);look.copy(goal);resize();controls.update();invalidate();}
+  focus(id){const pos=city.locations[id];if(!pos)return;goalSpan=span=id==='command'?58:74;bias=explore?0:layoutBias;goal.set(...pos);look.copy(goal);resize();controls.update();invalidate();}
  };
 }

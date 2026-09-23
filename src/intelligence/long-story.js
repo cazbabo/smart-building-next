@@ -20,3 +20,18 @@ export const places={
  housing:{name:'Neighbourhood',source:'Building locations and service reports.',work:'Place requests into geographic and asset context.',outcome:'Give residents’ service teams a consistent incident history.'},
  command:{name:'CDP Command Center',source:'Existing systems, IoT observations and operational records.',work:'Check, organize and link information to common locations and events.',outcome:'Create a shared operational picture for people to review and act on.'},
 };
+// The presentation's bottom band carries a shorter lede than the scrolling page,
+// and a numbered pin on the model for each point: where on the city the point
+// is about. World coordinates, in the frame civic-model.js builds; null means
+// the point has no single place.
+const GAUGE=[-10.6,3,19.4],ROAD=[-17,.6,5],WALL=[-62,2.4,1.5],PODS=[-63,3,15];
+export const present={
+ overview:{brief:'A hospital, a school, a waterway and a transport team serve one community. Their information should work together, too.',pins:[[-2,10,1],[29,9,1],WALL]},
+ fragmented:{brief:'Heavy rain is coming. Water, camera and road data sit in separate systems, and each team sees only its own part.',pins:[GAUGE,ROAD,WALL]},
+ foundation:{brief:'Connect the maps, records, camera events and reports the city already has, so every team sees the same place and incident.',pins:[PODS,WALL,[-2,10,1]]},
+ iot:{brief:'Add water, air, weather and energy sensors where information is missing. Every reading is timestamped; every device reports its health.',pins:[GAUGE,[-4,11,-28],[31,2,-20]]},
+ flood:{brief:'The water reading, the road beside it and the team responsible: one incident, seen the same way in the command center.',pins:[GAUGE,ROAD,WALL]},
+ priorities:{brief:'The same connected view serves transport, environment, energy and public services. Select a district to see its role.',pins:[]},
+ ai:{brief:'With reliable data and history, show an illustrative forecast beside current conditions. A person reviews every recommendation.',pins:[GAUGE,[-6,8.5,15],WALL]},
+ roadmap:{brief:'Begin with one priority and the systems you already have. Add sensors where they help, and AI when the information is ready.',pins:[PODS,[31,2,-20],WALL]},
+};
