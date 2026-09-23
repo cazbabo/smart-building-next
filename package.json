@@ -8,8 +8,10 @@
     "build": "npm run assets && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
     "assets": "node scripts/build-kenney-assets.mjs",
-    "poster": "npm run assets && node scripts/render-poster.mjs",
-    "test": "npm run assets && node tests/civic-motion.test.mjs && node tests/kenney-city.test.mjs"
+    "poster": "npm run assets && node scripts/dump-city.mjs iot /tmp/city-iot && python3 scripts/blender/city.py /tmp/city-iot poster",
+    "test": "npm run assets && node tests/civic-motion.test.mjs && node tests/kenney-city.test.mjs",
+    "landmarks": "python3 scripts/blender/landmarks.py && node scripts/compress-landmarks.mjs",
+    "ground-ao": "npm run assets && node scripts/dump-city.mjs overview /tmp/city-overview && python3 scripts/blender/city.py /tmp/city-overview ground-ao"
   },
   "dependencies": {
     "three": "^0.185.1",

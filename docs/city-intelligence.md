@@ -41,13 +41,118 @@ hands back a separate material and a separate copy of the atlas per GLB, which
 would be dozens of uploads of one image, so the loader collapses them to one
 material per kit before cloning.
 
-Landmarks stay procedural, because no kit contains them and each one identifies
-its district: the command center and its video wall, the flood gates and water
-surface, the wind turbines, the civic dome and colonnade, the hospital roof
-plant, the industrial chimneys and the solar field. `block()` and `tree()` are
-the only generic-architecture factories in `civic-model.js`, so swapping their
+No kit contains the landmarks, and each one identifies its district, so they are
+modelled for this page in Blender (below). `block()` and `tree()` are the only
+generic-architecture factories in `civic-model.js`, so swapping their
 implementations replaces every generic building and tree in the city while every
 landmark, platform, road and story prop keeps its exact position.
+
+## Landmarks
+
+The seven objects the story is told through are modelled in Blender, from
+Python, by `scripts/blender/landmarks.py`: the command center, the city hall,
+the flood barrier, the wind turbine, the works with its tanks and chimneys, the
+transit station with its bus, and a solar table. Each is built in its
+district's own frame, so it drops into the position the procedural stand-in held
+and nothing about the layout moves.
+
+- **Command center.** A two-tier plinth with a dark control-room floor, a
+  76-degree curved video wall of 7 by 3 screens on raked steel legs, two tiers of
+  consoles on the same centre so every screen faces the operators square-on, a
+  glass balustrade, and the six data-source pods rebuilt as server cabinets with
+  lime status strips and conduits back to the plinth. The wall shows a dashboard
+  drawn in HTML and rendered by Chromium (`scripts/blender/textures/dashboard.html`,
+  `scripts/render-textures.mjs`): the city map with its routes converging on the
+  hub, the water level against the 1.40 m line, the forecast, sensors and
+  incidents - the story's own numbers. The lime line along the wall's foot is the
+  one piece of brand colour on any building, and it is a display.
+- **City hall.** Podium and grand stair, a two-storey block with pilasters,
+  string course and cornice, a hexastyle portico under a pediment with a clock,
+  and a verdigris copper dome with ribs, drum colonnade, lantern and gilt finial.
+  Two flags on the forecourt.
+- **Flood barrier.** Quay walls round the basin, six streamlined piers with gate
+  guides, a service deck with stainless machine hoods, a control house and a
+  staff gauge in the water. The gauge's green, amber and red bands are placed by
+  the same formula `civic-motion.js` uses for the water's height, so the water
+  crosses 1.40 m and 1.60 m on the gauge exactly when the readout says it does.
+  The five gate leaves are separate nodes built round their own centres, and
+  `civic-motion.js` lifts them exactly as it lifted the boxes they replace.
+- **Wind turbine.** Tapered tower, streamlined nacelle, and three twisted,
+  tapering aerofoil blades with aviation-red tips. The rotor is its own node
+  pivoting on the hub; the page drives it through the same group as before.
+- **Works.** A sawtooth-roofed hall glazed on its steep faces, brick base and
+  ribbed cladding, loading doors with hazard bollards; two storage tanks with weld
+  bands, domed roofs and spiral stairs; three chimneys with aviation bands and
+  service galleries; and a pipe rack in the usual service colours - gas yellow,
+  grey, water green.
+- **Transit.** A station hall with a glazed front, a glass barrel-vault canopy on
+  branching columns over a platform with a tactile edge, and a low-floor city bus
+  in blue and white.
+- **Solar table.** A framed module tilted 15 degrees on aluminium legs and
+  footings, its cells painted into a texture in numpy.
+
+Materials are real ones throughout, as the rest of the city: concrete, stone,
+brick, steel, copper, glass. Lime, orchid and pink stay on the data layer.
+
+Each landmark is baked for ambient occlusion with Cycles into a lightmap, and
+the page applies it as an `aoMap`: it darkens ambient and environment light only,
+so the real-time sun and its shadows stay in charge of the direct light and
+nothing is darkened twice. The lightmap must be the only UV set on a baked body -
+swept tubes carry UVs out of the curve conversion, and when those came first the
+page's `aoMap` sampled the wrong coordinates and blacked out every wall. Maps are
+baked at 2048, halved (a 2 x 2 average, which also removes the bake's grain)
+and stored as greyscale JPEG: 14 MB of PNG became about 1.1 MB. Meshes are
+meshopt-compressed and quantised (`scripts/compress-landmarks.mjs`), which took
+them from 3.1 MB to 0.9 MB; three decodes them with the decoder it ships.
+Quantisation keeps its dequantising transform on the node, so the loader
+(`landmarks.js`) leaves the node alone and places a holder group instead.
+
+If the landmarks cannot be fetched the procedural stand-ins are drawn, exactly
+as before.
+
+## Light
+
+**Contact shadows, baked.** Kit buildings are instances sharing geometry, so
+they cannot carry per-building occlusion. Instead `scripts/blender/city.py`
+rebuilds the whole city from `scripts/dump-city.mjs` - civic-model.js itself,
+flattened to triangles - and renders ambient occlusion straight down onto the
+ground surfaces the page tags (base slab, road, platforms, lawns, paths, lane
+paint). Every building, tree, lamp and parked car is invisible to that camera but
+still in the way of the occlusion rays, so the ground comes out dark where
+something stands on or beside it while the thing itself is not in the picture.
+`ground-ao.js` projects the image back onto those surfaces by world X and Z: one
+2048-pixel texture, 300 KB, and every kit instance gets a soft footprint. Ambient
+light takes the full occlusion; the sun takes half of it, which is not physical
+but is what makes a footprint visible in full daylight.
+
+**Post-processing** (`civic-post.js`). Ground-truth ambient occlusion (GTAO)
+covers what no bake can: kit buildings against each other, cars, anything that
+moves. It leaves translucent and self-lit surfaces out of its depth and normals -
+the pink forecast plane otherwise occluded the whole water district under it.
+Bloom runs in the night opening only and is selective: after tone mapping a
+white roof is as bright as a lit screen, so a luminance threshold blew the city
+hall into glare. Only what emits light - the video wall, the consoles, lamps, the
+data routes, the motes - is drawn into a half-resolution glow buffer, everything
+else is drawn black so it still hides what is behind it, and only the halo is
+added back.
+
+A composer tone-maps once, at the end, which would have put the brand lime and
+pink through ACES again - a different lime from the button beside the canvas.
+The scene is instead rendered into targets flagged the way three flags an XR
+target, which makes every material tone-map in its own shader exactly as it does
+drawing straight to the screen; the last pass converts to sRGB and nothing else.
+Measured: the same 248 pixels land exactly on #C7FF3D in the Data chapter with
+post-processing on and off. The canvas stays transparent over the night layer
+throughout; the halo raises alpha over empty sky so the glow reads against it.
+
+**Quality guard.** Level 2 is AO and bloom; 1 drops AO and caps the pixel ratio at
+1.5; 0 renders straight to the canvas with no post-processing, exactly as the
+page did before any of this. The level steps down, never up, when the median gap
+between rendered frames over two seconds passes 52 ms (the page renders at most
+30 frames a second, so a healthy machine shows about 33). The window is time,
+not frames: on the machine it is for, 45 frames took most of a minute. `?fx=high`,
+`low` or `off` pins a level for a presenter who knows their machine, and
+`<html data-fx>` shows the level in use.
 
 `block()` fills its rectangle plot by plot rather than dropping one slab. An even
 grid of same-sized buildings is what makes a city read as a toy, so each plot
@@ -126,7 +231,7 @@ All values and device actions are illustrative. No live forecasting service, sen
 
 ## Implementation
 
-`story-state.js` is a lightweight shared telemetry function. `civic-motion.js` controls the animated meshes. `civic-model.js` builds the city; `kenney-kit.js` loads the kit and instances it; `civic-scene.js` manages camera, lighting and animation lifecycle. `app.js` owns the narrative, readout and accessible HTML controls.
+`story-state.js` is a lightweight shared telemetry function. `civic-motion.js` controls the animated meshes. `civic-model.js` builds the city; `kenney-kit.js` loads the kit and instances it; `landmarks.js` loads the Blender landmarks; `ground-ao.js` applies the baked contact shadows; `civic-post.js` owns post-processing and the quality guard; `civic-scene.js` manages camera, lighting and animation lifecycle. `app.js` owns the narrative, readout and accessible HTML controls.
 
 `civic-motion.js` is untouched by the kit: it drives the same rotors, vehicles,
 gates, water surface and overlay meshes it always has. Kit buildings are
@@ -155,19 +260,33 @@ across. Floating them also removes the card edges between the two columns, and
 the narrative drops its rules, borders and filled bands so the right-hand column
 reads as text laid on the page rather than a panel beside the model.
 
-Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled static model preview with the complete text story. `npm run poster` renders that preview from the real scene at the IoT chapter with a software rasteriser (`scripts/render-poster.mjs`), sampling the same atlas pixels and material colours the browser samples, so the preview cannot drift from the scene. It casts shadows through a software shadow map of its own, but has no ambient occlusion and no environment reflections, so it still reads flatter than the GPU render.
+Desktop uses WebGL when available. Mobile and unavailable WebGL use a labeled static model preview with the complete text story. `npm run poster` renders that preview with Cycles from the same flattened city the ground bake uses, at the IoT chapter: global illumination, a soft sun, the dashboard lit on the wall, framed on the content. It is composited onto the page's own ground, #FAF8FC, because on a phone nothing sits under the image in its layer for a multiply blend to hide a white one. It replaces the software rasteriser the page used before, which had no ambient occlusion and no bounce light.
+
+### Rebuilding the assets
+
+The built files are committed; none of this runs in `npm run build`.
+
+- `pip install bpy==4.2.0` once - Blender as a Python module.
+- `npm run landmarks` - model, bake and export every landmark, then compress.
+  `python3 scripts/blender/landmarks.py civic` rebuilds one;
+  `LANDMARK_PREVIEW=<dir>` also renders each from the page's angle.
+- `node scripts/render-textures.mjs` - the dashboard; needs Playwright.
+- `npm run ground-ao` - the top-down contact shadow map.
+- `npm run poster` - the Cycles preview.
 
 ## Verification
 
 - Production build for all three page entries.
 - `node tests/civic-motion.test.mjs`: vehicles and rotors move; equal timestamps preserve ambient poses; connection reveal progresses; water and gates reverse; mock forecast values match; geometry counts remain stable through every chapter. This runs the procedural fallback, since it builds the city with no kit.
 - `node tests/kenney-city.test.mjs`: every kit model loads and reports a finite extent with no tangent attribute; the city builds with the kit; rotors, the eight vehicles, the flood gates and the water surface all survive the swap; every district keeps its location and clickable group; kit buildings land inside districts; geometry counts stay stable through every chapter.
-- With the kit: 619 meshes, 875 instances, 160,502 triangles. Without it: 1,570 meshes, 103,242 triangles. The kit city carries half again the triangles of the procedural one but a third of the meshes, which is the trade that buys the density.
+- `node tests/kenney-city.test.mjs` also loads the landmarks under Node: every manifest entry decodes (meshopt, quantised), every node has geometry and finite bounds, the rotor's vertices centre on its hub, each gate leaf is built round its centre, three turbines turn, five gates lift to 2.4 at the height of the flood and settle back to 1.5.
+- With the kit and the landmarks: 506 meshes, 747 instances, 202,016 triangles. Without either: 1,585 meshes, 108,582 triangles. Landmarks: command center 12.0k triangles, city hall 10.8k, works 10.2k, barrier 6.9k, transit 4.6k, turbine 1.9k, solar table 0.6k; 2.2 MB on disk with their AO maps and textures.
 - Served build checked over HTTP: page, GLB, atlas and preview image all return 200.
 - Rendered in Chromium at 1600 by 900 and 1366 by 768, all eight chapters: WebGL initialises, the whole city sits in frame with nothing clipped, the narrative reads over it, and scrolling to the flood chapter drives both the scene and the readout. At the top the night layer is fully on and the motes drift over it; at the Data chapter the night reads 0 and no mote is on screen. No page errors and no horizontal overflow at 390, 1366 or 1600.
 - Floating chrome measured against its own pixels, animation paused, the glyphs made transparent so the sample is the ground the text sits on and the rounded corners excluded: chapter name 10.8 to 11.5:1, mode label 6.9 to 7.4:1, fine print 6.3 to 7.4:1 across every chapter at both widths. All above the 4.5:1 floor; before the pills the first two ran to 1.00:1.
 - Compact layout at 390 by 844: the opening reads plum on the pale page at 11.5:1, the night layer is absent, and the city preview sits on the page rather than under it.
-- Keyboard: skip link, brand, three phase links, fullscreen, then the hero's two actions and the view controls, each with a visible focus ring. Reduced motion: all eight sections revealed at full opacity, chapter and readout still tracking scroll, no errors. Frame rate stays unverified: this box has no GPU and Chromium falls back to SwiftShader.
-- Offline poster render inspected. GPU appearance, shadow quality, ambient occlusion and frame rate remain unverified: this environment has no WebGL, so nothing here has been seen through the real renderer. The poster's own shadows come from its software shadow map, not from the renderer the page uses.
+- Keyboard: skip link, brand, three phase links, fullscreen, then the hero's two actions and the view controls, each with a visible focus ring. Reduced motion: all eight sections revealed at full opacity, chapter and readout still tracking scroll, no errors.
+- Post-processing seen in Chromium with `?fx=high`: the opening with selective bloom on the video wall, consoles and motes and no glare on white roofs; every chapter with GTAO. The quality guard seen stepping down under SwiftShader at a pixel ratio of 2: level 2 at 5.8 s a frame, then level 1 at 2.5 s, then 0.
+- Frame rate on real hardware stays unverified: this box has no GPU and Chromium renders through SwiftShader, which is what the guard is for.
 
 The existing Smart Building/AIS pages retain their entry points. Unpublished `/smart-city` draft files are not part of this route.

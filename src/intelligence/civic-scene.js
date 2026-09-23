@@ -3,14 +3,25 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {createCivicCity} from './civic-model.js';
 import {loadKenneyKit} from './kenney-kit.js';
+import {loadLandmarks} from './landmarks.js';
+import {createPost} from './civic-post.js';
+import {loadGroundAO,applyGroundAO} from './ground-ao.js';
 export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  let renderer;
  try {renderer=new T.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});}
  catch {onReady(false);return {setStage(){},setExplore(){},setPaused(){},setCentred(){},setNight(){},home(){},focus(){}};}
  // The kit is the city's architecture; if it cannot be fetched the scene still
  // builds from procedural geometry rather than dropping to the static poster.
- const kit=await loadKenneyKit().catch(()=>null);
- const scene=new T.Scene(),city=createCivicCity(kit);scene.add(city.root);
+ // Landmarks are the same: without them the procedural stand-ins are drawn.
+ const [kit,landmarks,groundAO]=await Promise.all([
+  loadKenneyKit().catch(()=>null),
+  loadLandmarks().catch(e=>{console.warn('landmarks unavailable',e);return null;}),
+  // The bake is of the kit city with its landmarks; without both it would put
+  // footprints under buildings that are not there.
+  loadGroundAO().catch(()=>null),
+ ]);
+ const scene=new T.Scene(),city=createCivicCity(kit,landmarks);scene.add(city.root);
+ if(groundAO&&kit&&landmarks)applyGroundAO(city.root,groundAO);
  // Ambient light this strong flattens the city: it lifts the shaded faces to
  // nearly the lit ones, so nothing reads as solid. Keep it low, let the key
  // light carry the form, and use a cool fill so the shadow sides stay legible.
@@ -90,6 +101,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  const pmrem=new T.PMREMGenerator(renderer),room=new RoomEnvironment();scene.environment=pmrem.fromScene(room,.1).texture;scene.environmentIntensity=.42;room.dispose();pmrem.dispose();
  host.appendChild(renderer.domElement);renderer.domElement.setAttribute('aria-label','Animated 3D civic district and command center');
  const camera=new T.OrthographicCamera(-70,70,60,-60,.1,400),controls=new OrbitControls(camera,renderer.domElement);
+ const post=createPost(renderer,scene,camera);
  controls.enabled=false;controls.enableDamping=false;controls.enablePan=false;controls.enableZoom=false;
  controls.minPolarAngle=Math.PI*.25;controls.maxPolarAngle=Math.PI*.37;controls.minAzimuthAngle=Math.PI*.19;controls.maxAzimuthAngle=Math.PI*.31;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
@@ -114,7 +126,9 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   roadmap:   [-13, 1,  2, 110],
   // The opening carries the headline under the city rather than beside it, so
   // the frame looks at a point below the model and lifts it clear of the type.
-  hero:      [-13,-17,  2, 116],
+  // Wide enough that the top of the video wall clears the header: it is the
+  // brightest thing in the opening once bloom is on, and it was cut off.
+  hero:      [-16,-15,  1, 136],
  };
  const FIT=.79;                   // vertical extent as a share of the frame width
  const goal=new T.Vector3(),look=new T.Vector3();
@@ -141,14 +155,14 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
     ||Math.abs(wantX-swingX)>1e-4||Math.abs(wantY-swingY)>1e-4;
    frame();
   }
-  city.update(time,dt||1/30,!moving);drift(time);renderer.render(scene,camera);
+  city.update(time,dt||1/30,!moving);drift(time);post.render(night,moving);
   onLabels?.(Object.fromEntries(Object.entries(city.locations).map(([id,at])=>{const p=new T.Vector3(...at);p.y+=3;p.project(camera);return[id,[(p.x*.5+.5)*100,(-p.y*.5+.5)*100]];})));
   if(moving||settling)invalidate();
  }
  function invalidate(){if(!scheduled&&!document.hidden&&visible){scheduled=true;requestAnimationFrame(draw);}}
  function resize(){
   const w=host.clientWidth,h=host.clientHeight;if(!w||!h)return;
-  if(w!==width||h!==height){width=w;height=h;renderer.setSize(w,h);}
+  if(w!==width||h!==height){width=w;height=h;post.setSize(w,h);}
   frame();invalidate();
  }
  /** Rebuilds the projection and seats the camera from the current framing. */

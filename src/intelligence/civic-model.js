@@ -8,7 +8,7 @@ const hash=(...seed)=>{let h=0x9e3779b9;for(const v of seed)h=Math.imul(h^Math.r
 const pick=(list,...seed)=>list[Math.floor(hash(...seed)*list.length)%list.length];
 const cube=new T.BoxGeometry(1,1,1),softCube=new RoundedBoxGeometry(1,1,1,2,.06),crownGeometry=new T.SphereGeometry(1,12,8);
 const material=(color,more={})=>new T.MeshStandardMaterial({color,roughness:.65,...more});
-export function createCivicCity(kit=null){
+export function createCivicCity(kit=null,landmarks=null){
  const root=new T.Group(),assets={},locations={},overlays=new T.Group(),rotors=[],vehicles=[],gates=[];root.add(overlays);
  const placer=kit&&new KitPlacer(kit);
  const LANE=5.4;   // one road tile, in world units
@@ -17,6 +17,9 @@ export function createCivicCity(kit=null){
  // overlays and the command center's screens - so the city itself is never
  // painted in them.
  const p={white:material('#f2efe9'),stone:material('#d9d5cc'),edge:material('#bdb8ae'),glass:material('#54798a',{metalness:.38,roughness:.22}),blue:material('#5d7f99'),deep:material('#3b4148'),teal:material('#7f8f97'),road:material('#8c8c8e'),mark:material('#f4f3f0'),grass:material('#7ea05c'),leaf:material('#3f7043'),leaf2:material('#8fb865'),wood:material('#a8834f'),roof:material('#8f5a4a'),water:material('#3f8fa8',{metalness:.2,roughness:.28}),solar:material('#20344f',{metalness:.3,roughness:.27}),lime:material('#C7FF3D'),orchid:material('#C044D9'),warning:material('#edb64c')};
+ // Ground surfaces - base slab, road, platforms, lawns, paths, lane paint - take
+ // the baked top-down occlusion map (see ground-ao.js); nothing else does.
+ const ground=a=>{a.userData.ground=true;return a;};
  function box(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(cube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function cylinder(g,r,h,x,y,z,m=p.stone,n=20){const a=new T.Mesh(new T.CylinderGeometry(r,r,h,n),m);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function sphere(g,r,x,y,z,m=p.leaf,s=[1,1,1]){const a=new T.Mesh(new T.SphereGeometry(r,12,8),m);a.position.set(x,y,z);a.scale.set(...s);a.castShadow=true;g.add(a);return a;}
@@ -27,7 +30,7 @@ export function createCivicCity(kit=null){
   cylinder(g,.11*s,1.5*s,x,.75*s+.6,z,p.wood,6);for(const [i,[dx,dy,dz,r]] of [[0,0,0,.85],[-.4,-.3,.2,.6],[.35,-.35,-.25,.62]].entries()){const a=new T.Mesh(crownGeometry,i===1?p.leaf2:p.leaf);a.position.set(x+dx*s,2.25*s+.5+dy*s,z+dz*s);a.scale.set(r*s,r*s*1.15,r*s);a.castShadow=true;g.add(a);}}
  function softBox(g,w,h,d,x,y,z,m=p.white){const a=new T.Mesh(softCube,m);a.scale.set(w,h,d);a.position.set(x,y,z);a.castShadow=true;a.receiveShadow=true;g.add(a);return a;}
  function grove(g,x,z,n,axis='x'){for(let i=0;i<n;i++)tree(g,x+(axis==='x'?i*2:0),z+(axis==='z'?i*2:0),.8+(i%3)*.12);}
- function district(id,x,z,w,d,label){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;root.add(g);assets[id]=g;locations[id]=[x,6,z];g.name=label;softBox(g,w,.55,d,0,.05,0,p.white).renderOrder=-20;box(g,w-.5,.12,d-.5,0,.38,0,p.grass).renderOrder=-19;
+ function district(id,x,z,w,d,label){const g=new T.Group();g.position.set(x,0,z);g.userData.asset=id;root.add(g);assets[id]=g;locations[id]=[x,6,z];g.name=label;ground(softBox(g,w,.55,d,0,.05,0,p.white)).renderOrder=-20;ground(box(g,w-.5,.12,d-.5,0,.38,0,p.grass)).renderOrder=-19;
   // Plant the platform margin. Each district's own content sits in the middle,
   // so the outer strip is otherwise bare lawn and reads as unbuilt ground.
   if(placer)for(const [ex,ez] of edgePlots(w,d))tree(g,ex,ez,.7+hash(x+ex,z+ez)*.55);
@@ -99,13 +102,18 @@ export function createCivicCity(kit=null){
   const a=new T.Mesh(geo,p.roof);a.position.set(x,y,z);a.castShadow=true;g.add(a);
  }
 
- function path(g,w,d,x,z){box(g,w,.07,d,x,.53,z,p.stone).renderOrder=-17;}
+ function path(g,w,d,x,z){ground(box(g,w,.07,d,x,.53,z,p.stone)).renderOrder=-17;}
  // A connected road grid and layered, planted district platforms.
- softBox(root,89,1.5,67,0,-.9,0,p.white).renderOrder=-40;box(root,87,.16,65,0,-.1,0,p.road).renderOrder=-35;
- for(const x of [-17,14])for(let z=-29;z<31;z+=3)box(root,.12,.035,1.4,x,.08,z,p.mark).renderOrder=-30;
- for(const z of [-10,13])for(let x=-40;x<42;x+=3)box(root,1.4,.035,.12,x,.08,z,p.mark).renderOrder=-30;
- for(const x of [-17,14])for(const z of [-10,13])for(let i=0;i<5;i++){box(root,.3,.05,2.8,x-1+i*.5,.12,z+3,p.mark);box(root,2.8,.05,.3,x+3,.12,z-1+i*.5,p.mark);}
+ ground(softBox(root,89,1.5,67,0,-.9,0,p.white)).renderOrder=-40;ground(box(root,87,.16,65,0,-.1,0,p.road)).renderOrder=-35;
+ for(const x of [-17,14])for(let z=-29;z<31;z+=3)ground(box(root,.12,.035,1.4,x,.08,z,p.mark)).renderOrder=-30;
+ for(const z of [-10,13])for(let x=-40;x<42;x+=3)ground(box(root,1.4,.035,.12,x,.08,z,p.mark)).renderOrder=-30;
+ for(const x of [-17,14])for(const z of [-10,13])for(let i=0;i<5;i++){ground(box(root,.3,.05,2.8,x-1+i*.5,.12,z+3,p.mark));ground(box(root,2.8,.05,.3,x+3,.12,z-1+i*.5,p.mark));}
  const civic=district('civic',-2,1,25,18,'Civic administration');path(civic,22,14,0,0);
+ // A modelled landmark when the Blender set is loaded; the procedural hall
+ // below is the fallback, and each district keeps its layout either way.
+ const lm=(name,id,g,x=0,y=0,z=0)=>{const node=landmarks.node(name,id);node.position.set(x,y,z);g.add(node);return node;};
+ if(landmarks){lm('civic','civic-body',civic);locations.civic=[-2,14,1];}
+ else{
  block(civic,15,8,2,0,-1);
  for(const x of [-7.4,7.4])box(civic,.2,.7,8.4,x,6.0,-1,p.white);
  for(const z of [-5,3])box(civic,15,.7,.2,0,6.0,z,p.white);
@@ -117,17 +125,34 @@ export function createCivicCity(kit=null){
  cylinder(civic,2.15,.22,0,9.25,-1,p.glass,32);
  box(civic,14,.16,.14,0,4.97,5.06,p.orchid);
  grove(civic,-10,-6,7,'z');grove(civic,10,-6,7,'z');locations.civic=[-2,11,1];
+ }
  const tourism=district('tourism',-30,-23,22,18,'Park and tourism');
  const pond=cylinder(tourism,6.7,.18,-1,.55,0,p.water,48);pond.scale.z=.76;pond.renderOrder=-18;
  tube(tourism,Array.from({length:41},(_,i)=>[Math.cos(i*Math.PI/20)*8,.66,Math.sin(i*Math.PI/20)*6]),.5,p.stone);
  grove(tourism,-9,-6,8);grove(tourism,-9,6,8);for(const x of [-9,9])grove(tourism,x,-3,4,'z');
  cylinder(tourism,.9,.22,-1,.7,0,p.white);tube(tourism,[[-1,.8,0],[-1,3.6,0],[-1.7,1.1,.3]],.065,p.white);block(tourism,4,3,1,6,-4);roof(tourism,4.4,3.5,6,3.72,-4);
- const industry=district('industry',-2,-23,25,18,'Industry');path(industry,22,15,0,0);block(industry,11,7,2,-4,1,p.stone);box(industry,12,.25,8,-4,6.0,1,p.deep);
+ const industry=district('industry',-2,-23,25,18,'Industry');path(industry,22,15,0,0);
+ if(landmarks){lm('industry','industry-body',industry);grove(industry,-10,7.4,11);}
+ else{block(industry,11,7,2,-4,1,p.stone);box(industry,12,.25,8,-4,6.0,1,p.deep);
  for(const x of [5,8]){cylinder(industry,1.5,4.3,x,2.6,2,p.white,24);sphere(industry,1.5,x,4.75,2,p.stone,[1,.4,1]);}
  for(const [x,h] of [[-6,10],[-2,12],[2,8]]){cylinder(industry,.6,h,x,h/2+.5,-5,p.stone,16);cylinder(industry,.63,.5,x,h*.8,-5,p.deep,16);}
- tube(industry,[[5,1.5,2],[5,1.5,-2],[-3,1.5,-2],[-3,4,0]],.18,p.teal);grove(industry,-10,7,11);locations.industry=[-2,13,-23];
- const energy=district('energy',29,-23,24,18,'Clean energy');block(energy,6,5,1,-7,3);for(let x=-3;x<=8;x+=3)for(let z=0;z<=5;z+=2.8){const panel=box(energy,2.6,.12,2,x,1.2,z,p.solar);panel.rotation.x=-.22;box(energy,.1,.8,1.2,x,.7,z,p.stone);for(let k=-1;k<=1;k++)box(energy,.025,.025,1.8,x+k*.7,1.4,z,p.glass);}
- for(const x of [-7,1,9]){cylinder(energy,.18,9,x,5,-5,p.white,12);const rotor=new T.Group();rotor.position.set(x,9.5,-5);energy.add(rotor);rotors.push(rotor);sphere(rotor,.35,0,0,0,p.white);for(let i=0;i<3;i++){const arm=new T.Group();arm.rotation.z=i*Math.PI*2/3;rotor.add(arm);softBox(arm,.28,3.6,.12,0,1.6,0,p.white);}}
+ tube(industry,[[5,1.5,2],[5,1.5,-2],[-3,1.5,-2],[-3,4,0]],.18,p.teal);grove(industry,-10,7,11);}
+ locations.industry=[-2,13,-23];
+ const energy=district('energy',29,-23,24,18,'Clean energy');block(energy,6,5,1,-7,3);
+ // Twelve modelled PV tables in four columns clear of the building to the west.
+ if(landmarks)for(const x of [-2.4,.6,3.6,6.6])for(const z of [0,2.8,5.6])lm('solar','solar-table',energy,x,0,z);
+ else for(let x=-3;x<=8;x+=3)for(let z=0;z<=5;z+=2.8){const panel=box(energy,2.6,.12,2,x,1.2,z,p.solar);panel.rotation.x=-.22;box(energy,.1,.8,1.2,x,.7,z,p.stone);for(let k=-1;k<=1;k++)box(energy,.025,.025,1.8,x+k*.7,1.4,z,p.glass);}
+ for(const x of [-7,1,9]){
+  // Modelled turbine: the tower is static, the rotor node turns on its hub, and
+  // civic-motion.js drives it through the same group it always has.
+  if(landmarks){
+   const {hub}=landmarks.entry('turbine');
+   const tower=landmarks.node('turbine','turbine-tower');tower.position.set(x,0,-5);energy.add(tower);
+   const rotor=new T.Group();rotor.position.set(x+hub[0],hub[1],-5+hub[2]);energy.add(rotor);rotors.push(rotor);
+   rotor.add(landmarks.node('turbine','turbine-rotor'));
+   continue;
+  }
+  cylinder(energy,.18,9,x,5,-5,p.white,12);const rotor=new T.Group();rotor.position.set(x,9.5,-5);energy.add(rotor);rotors.push(rotor);sphere(rotor,.35,0,0,0,p.white);for(let i=0;i<3;i++){const arm=new T.Group();arm.rotation.z=i*Math.PI*2/3;rotor.add(arm);softBox(arm,.28,3.6,.12,0,1.6,0,p.white);}}
 
  locations.energy=[29,12,-23];
  const hospital=district('hospital',29,1,24,18,'Hospital');path(hospital,20,14,0,0);block(hospital,11,7,3,-3,-1);block(hospital,6,11,2,5,0);box(hospital,3,.18,2,-3,1,5,p.white);box(hospital,3,.15,2,-3,3,5,p.teal);box(hospital,.3,1.6,.1,-3,6.4,2.6,p.white);box(hospital,1.2,.3,.12,-3,6.4,2.62,p.white);grove(hospital,-10,6,10);
@@ -144,26 +169,37 @@ export function createCivicCity(kit=null){
  const track=cylinder(school,5.4,.10,-3,.62,3,p.roof,48);track.scale.z=.65;track.castShadow=false;
  const field=cylinder(school,4.3,.08,-3,.71,3,p.grass,48);field.scale.z=.65;field.castShadow=false;
  for(const mark of [box(school,6.8,.05,.045,-3,.79,3,p.white),box(school,.045,.05,4,-3,.79,3,p.white)])mark.castShadow=false;for(const x of [-6.5,.5]){box(school,.07,1.2,1.8,x,1.35,3,p.white);box(school,.7,.07,1.8,x,1.95,3,p.white);}grove(school,-10,-6,8,'z');
- const transit=district('transit',-30,1,22,18,'Transport');path(transit,19,14,0,0);box(transit,13,.3,5,0,3.4,-2,p.blue);for(const x of [-5,0,5])box(transit,.18,3,.18,x,1.9,-2,p.white);box(transit,11,2.2,2,0,1.65,-5,p.white);windows(transit,11,2,1,0,-5);
+ const transit=district('transit',-30,1,22,18,'Transport');path(transit,19,14,0,0);
+ if(landmarks){lm('transit','transit-body',transit);for(const [x,y,z] of landmarks.entry('transit').buses)lm('transit','bus',transit,x,y,z);}
+ else{box(transit,13,.3,5,0,3.4,-2,p.blue);for(const x of [-5,0,5])box(transit,.18,3,.18,x,1.9,-2,p.white);box(transit,11,2.2,2,0,1.65,-5,p.white);windows(transit,11,2,1,0,-5);
  function bus(g,x,z){box(g,5,1.5,1.6,x,1.25,z,p.blue);box(g,4.1,.7,1.65,x,1.6,z,p.glass);box(g,5,.14,1.6,x,2.07,z,p.white);for(const dx of [-1.6,1.6])for(const dz of [-.8,.8]){const wheel=cylinder(g,.32,.15,x+dx,.65,z+dz,p.deep,10);wheel.rotation.x=Math.PI/2;}}
- bus(transit,-3,2);bus(transit,4,5);grove(transit,-9,-6,7,'z');
+ bus(transit,-3,2);bus(transit,4,5);}
+ grove(transit,-9,-6,7,'z');
  const water=district('water',-2,24,25,17,'Water and disaster prevention');
  const waterSurface=box(water,22,.22,14,0,.62,0,p.water);waterSurface.renderOrder=-18;
+ // The modelled barrier brings its own gate leaves, built round their centres, so
+ // civic-motion.js lifts them exactly as it lifted the boxes they replace.
+ if(landmarks){lm('barrier','barrier-body',water);for(const [i,x] of landmarks.entry('barrier').gates.entries())gates.push(lm('barrier',`gate-${i}`,water,x,1.5,1));}
+ else{
  for(const x of [-9,-4.5,0,4.5,9]){box(water,.9,3,2.5,x,2.1,1,p.stone);box(water,1.8,.32,3.5,x,3.68,1,p.white);}
  box(water,22,.4,2.1,0,3.1,1,p.stone);for(let x=-8;x<=8;x+=4){gates.push(box(water,3.3,1.3,.2,x,1.5,1,p.deep));box(water,3,.1,5,x,.94,5,p.white).material=material('#c0e4e7',{transparent:true,opacity:.7});}
- box(water,23,.3,2,0,3.55,1,p.stone);tube(water,[[-11,4.3,.1],[11,4.3,.1]],.07,p.deep);tube(water,[[-11,4.3,1.9],[11,4.3,1.9]],.07,p.deep);locations.water=[-2,5,24];
+ box(water,23,.3,2,0,3.55,1,p.stone);tube(water,[[-11,4.3,.1],[11,4.3,.1]],.07,p.deep);tube(water,[[-11,4.3,1.9],[11,4.3,1.9]],.07,p.deep);}
+ locations.water=[-2,5,24];
  const housing=district('housing',-30,24,22,17,'Neighbourhood');for(const [x,z] of [[-5,-4],[4,-4],[-5,4],[4,4]]){block(housing,5,4,1,x,z,p.white);roof(housing,5.6,4.6,x,3.72,z);tree(housing,x+3,z,.8);}
  // The platform is a visible part of the city story.
  const command=new T.Group();command.position.set(-62,0,1);command.userData.asset='command';root.add(command);assets.command=command;locations.command=[-62,16,1];
+ if(landmarks){lm('command','command-body',command);lm('command','command-screens',command);}
+ else{
  box(command,19,1.2,15,0,.6,0,p.white).renderOrder=-20;box(command,18,.2,14,0,1.3,0,p.stone);box(command,15,9,.65,0,12,-4,p.deep);box(command,14.2,8.2,.12,0,12,-3.63,p.glass);
  // Miniature dashboard, inset city map, chart bars and indicator tiles.
  box(command,13.3,7.4,.06,0,12,-3.52,p.deep);for(let i=0;i<4;i++){box(command,2.6,1.25,.08,-4.8+i*3.15,14.7,-3.44,p.glass);box(command,1.6,.25,.12,-4.8+i*3.15,14.7,-3.35,i===3?p.lime:p.white);}
  for(let x=0;x<5;x++)for(let z=0;z<3;z++)box(command,.95,.5+(x+z)%3*.4,.13,-5+x*1.3,10.3+z*.65,-3.4,(x+z)%2?p.teal:p.glass);
  for(let i=0;i<8;i++)box(command,.55,.7+(i%3)*.8,.12,1+i*.7,9.5+(i%3)*.4,-3.35,i%2?p.lime:p.teal);
  box(command,14,.3,3,0,3.3,0,p.white);for(const x of [-5,0,5]){box(command,2.7,1.7,.18,x,4.3,-.5,p.deep);box(command,2.3,1.35,.09,x,4.3,-.36,p.glass);box(command,.15,2.2,.15,x,2.2,0,p.deep);sphere(command,.4,x,3.8,2.4,p.deep);box(command,.65,1.1,.55,x,2.9,2.4,p.blue);box(command,1.1,.2,1,x,2.1,2.5,p.deep);}
- const sourceNodes=[];for(let i=0;i<6;i++){const x=-69+(i%3)*6,z=14+Math.floor(i/3)*5;const a=cylinder(root,2.8,.35,x,.15,z,p.white,6);a.renderOrder=-20;sourceNodes.push(a);cylinder(root,.65,.18,x,.45,z,i%2?p.glass:p.teal,8);}
+ for(let i=0;i<6;i++){const x=-69+(i%3)*6,z=14+Math.floor(i/3)*5;const a=cylinder(root,2.8,.35,x,.15,z,p.white,6);a.renderOrder=-20;cylinder(root,.65,.18,x,.45,z,i%2?p.glass:p.teal,8);}
+ }
  // Landscaped paths, seating and street hardware give the scene human scale.
- for(const [id,g] of Object.entries(assets)){if(id==='command')continue;for(const x of [-7,7]){softBox(g,1.6,.2,.55,x,1,7,p.wood);box(g,.12,.65,.45,x-.5,.7,7,p.deep);box(g,.12,.65,.45,x+.5,.7,7,p.deep);}}
+ for(const [id,g] of Object.entries(assets)){if(id==='command'||landmarks&&id==='water')continue;for(const x of [-7,7]){softBox(g,1.6,.2,.55,x,1,7,p.wood);box(g,.12,.65,.45,x-.5,.7,7,p.deep);box(g,.12,.65,.45,x+.5,.7,7,p.deep);}}
  // Vehicles move individually along the road loop, so they stay real meshes
  // rather than instances. civic-motion.js drives the group and expects the car
  // to face +X; kit cars are modelled nose-along -Z, hence the quarter turn.

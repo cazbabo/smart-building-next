@@ -1,0 +1,111 @@
+{
+ "barrier": {
+  "file": "barrier.glb",
+  "gates": [
+   -8,
+   -4,
+   0,
+   4,
+   8
+  ],
+  "nodes": {
+   "barrier-body": {
+    "ao": "barrier-body-ao.jpg"
+   },
+   "gate-0": {},
+   "gate-1": {},
+   "gate-2": {},
+   "gate-3": {},
+   "gate-4": {}
+  },
+  "triangles": 6926
+ },
+ "civic": {
+  "file": "civic.glb",
+  "nodes": {
+   "civic-body": {
+    "ao": "civic-body-ao.jpg"
+   }
+  },
+  "triangles": 10824
+ },
+ "command": {
+  "file": "command.glb",
+  "nodes": {
+   "command-body": {
+    "ao": "command-body-ao.jpg"
+   },
+   "command-screens": {
+    "maps": {
+     "screen-dashboard": {
+      "emissive": true,
+      "file": "dashboard.jpg"
+     }
+    }
+   }
+  },
+  "triangles": 11986
+ },
+ "industry": {
+  "file": "industry.glb",
+  "nodes": {
+   "industry-body": {
+    "ao": "industry-body-ao.jpg"
+   }
+  },
+  "triangles": 10160
+ },
+ "solar": {
+  "file": "solar.glb",
+  "nodes": {
+   "solar-table": {
+    "maps": {
+     "solar-cells": {
+      "emissive": false,
+      "file": "solar-cells.png"
+     }
+    }
+   }
+  },
+  "triangles": 614
+ },
+ "transit": {
+  "buses": [
+   [
+    -3.2,
+    0.565,
+    2.7
+   ],
+   [
+    3.6,
+    0.565,
+    5.1
+   ]
+  ],
+  "file": "transit.glb",
+  "nodes": {
+   "bus": {
+    "ao": "transit-bus-ao.jpg"
+   },
+   "transit-body": {
+    "ao": "transit-body-ao.jpg"
+   }
+  },
+  "triangles": 4564
+ },
+ "turbine": {
+  "file": "turbine.glb",
+  "hub": [
+   0,
+   9.55,
+   0.72
+  ],
+  "nodes": {
+   "turbine-rotor": {},
+   "turbine-tower": {
+    "ao": "turbine-tower-ao.jpg"
+   }
+  },
+  "triangles": 1858
+ }
+}

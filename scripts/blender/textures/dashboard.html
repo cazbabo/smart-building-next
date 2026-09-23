@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- The command center's video wall. Rendered to public/landmarks/dashboard.jpg
+     by scripts/render-textures.mjs; the wall is 7 x 3 screens, so the layout is
+     drawn on that grid and every bezel falls between two panels, not across one. -->
+<meta charset="utf-8">
+<style>
+ *{box-sizing:border-box;margin:0}
+ body{width:2100px;height:1320px;background:#07060d;font-family:"DejaVu Sans",Arial,sans-serif;color:#e9e1f0;overflow:hidden}
+ .grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,300px);grid-template-rows:repeat(3,440px)}
+ .p{position:absolute;padding:26px 28px;background:linear-gradient(160deg,#171226,#0d0a17);border:2px solid #2a2140;border-radius:10px}
+ h2{font-size:26px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#a996bf;margin-bottom:14px}
+ .big{white-space:nowrap;font-size:78px;font-weight:700;letter-spacing:-.03em;line-height:1}
+ .lime{color:#C7FF3D}.pink{color:#F05BB5}.orchid{color:#C044D9}.dim{color:#8e7fa5}
+ .pill{display:inline-block;padding:6px 16px;border-radius:30px;font-size:24px;font-weight:700;margin-right:10px}
+</style>
+<body>
+<!-- top bar across the whole wall -->
+<div class="p" style="left:14px;top:14px;width:2072px;height:112px;display:flex;align-items:center;gap:34px;padding:0 34px">
+ <svg width="64" height="64" viewBox="0 0 32 32"><path d="m16 3 12 7v13l-12 6L4 23V10Z" fill="#C7FF3D"/><path d="m4 10 12 7 12-7M16 17v12" fill="none" stroke="#07060d" stroke-width="1.6"/></svg>
+ <div style="font-size:44px;font-weight:700;letter-spacing:.02em">CITY INTELLIGENCE <span class="dim" style="font-weight:400">· OPERATIONS</span></div>
+ <div style="margin-left:auto"><span class="pill" style="background:#C7FF3D;color:#1d2608">● LIVE</span><span class="pill" style="background:#F05BB533;color:#F05BB5;border:2px solid #F05BB5">FLOOD WATCH</span></div>
+ <div style="font-size:52px;font-weight:700;letter-spacing:.04em">14:32</div>
+</div>
+
+<!-- city map, three panels wide and two tall -->
+<div class="p" style="left:14px;top:140px;width:886px;height:726px;padding:22px">
+ <h2>City map · connected systems</h2>
+ <svg width="840" height="640" viewBox="0 0 840 640">
+  <defs><radialGradient id="risk"><stop offset="0" stop-color="#F05BB5" stop-opacity=".75"/><stop offset="1" stop-color="#F05BB5" stop-opacity="0"/></radialGradient></defs>
+  <g fill="#1e1830" stroke="#3a2f55" stroke-width="3">
+   <rect x="40" y="30" width="220" height="160" rx="14"/><rect x="310" y="30" width="220" height="160" rx="14"/><rect x="580" y="30" width="220" height="160" rx="14"/>
+   <rect x="40" y="240" width="220" height="160" rx="14"/><rect x="310" y="240" width="220" height="160" rx="14"/><rect x="580" y="240" width="220" height="160" rx="14"/>
+   <rect x="40" y="450" width="220" height="160" rx="14"/><rect x="580" y="450" width="220" height="160" rx="14"/>
+  </g>
+  <rect x="310" y="450" width="220" height="160" rx="14" fill="#123047" stroke="#2b6f93" stroke-width="3"/>
+  <ellipse cx="420" cy="530" rx="200" ry="140" fill="url(#risk)"/>
+  <g stroke="#2a2342" stroke-width="16" fill="none"><path d="M0 215H840M0 425H840M285 0V640M555 0V640"/></g>
+  <g fill="none" stroke-width="7" stroke-linecap="round">
+   <path d="M150 110Q300 215 420 320" stroke="#C7FF3D"/><path d="M420 110V320" stroke="#C7FF3D"/><path d="M690 110Q540 215 420 320" stroke="#F05BB5"/>
+   <path d="M150 320H420" stroke="#C7FF3D"/><path d="M690 320H420" stroke="#C7FF3D"/><path d="M150 530Q300 425 420 320" stroke="#F05BB5"/>
+   <path d="M690 530Q540 425 420 320" stroke="#C7FF3D"/><path d="M420 530V320" stroke="#F05BB5"/>
+  </g>
+  <circle cx="420" cy="320" r="34" fill="#C7FF3D"/><circle cx="420" cy="320" r="54" fill="none" stroke="#C7FF3D" stroke-width="4" opacity=".5"/>
+  <g fill="#C7FF3D"><circle cx="150" cy="110" r="12"/><circle cx="420" cy="110" r="12"/><circle cx="150" cy="320" r="12"/><circle cx="690" cy="320" r="12"/><circle cx="150" cy="530" r="12"/><circle cx="690" cy="530" r="12"/></g>
+  <g fill="#F05BB5"><circle cx="690" cy="110" r="12"/><circle cx="420" cy="530" r="16"/></g>
+ </svg>
+</div>
+
+<!-- KPI column -->
+<div class="p" style="left:914px;top:140px;width:286px;height:356px"><h2>Water level</h2><div class="big pink">1.60<span style="font-size:40px"> m</span></div><div style="font-size:28px;margin-top:18px" class="pink">▲ above 1.40 m</div></div>
+<div class="p" style="left:914px;top:510px;width:286px;height:356px"><h2>Sensors</h2><div class="big lime">128</div><div style="font-size:28px;margin-top:18px" class="dim">of 132 online</div></div>
+<div class="p" style="left:1214px;top:140px;width:286px;height:356px"><h2>Forecast · 30 min</h2><div class="big orchid">1.90<span style="font-size:40px"> m</span></div><div style="font-size:28px;margin-top:18px" class="dim">illustrative</div></div>
+<div class="p" style="left:1214px;top:510px;width:286px;height:356px"><h2>Incidents</h2><div class="big">3</div><div style="font-size:28px;margin-top:18px" class="dim">1 assigned · 2 open</div></div>
+
+<!-- district activity bars -->
+<div class="p" style="left:1514px;top:140px;width:572px;height:726px">
+ <h2>District activity</h2>
+ <svg width="516" height="620" viewBox="0 0 516 620">
+  <g font-size="24" fill="#a996bf">
+   <text x="0" y="40">Water</text><text x="0" y="120">Transport</text><text x="0" y="200">Hospital</text><text x="0" y="280">Energy</text><text x="0" y="360">Civic</text><text x="0" y="440">School</text><text x="0" y="520">Industry</text><text x="0" y="600">Housing</text>
+  </g>
+  <g>
+   <rect x="160" y="16" width="340" height="34" rx="8" fill="#F05BB5"/><rect x="160" y="96" width="280" height="34" rx="8" fill="#C7FF3D"/>
+   <rect x="160" y="176" width="240" height="34" rx="8" fill="#C7FF3D"/><rect x="160" y="256" width="300" height="34" rx="8" fill="#C7FF3D"/>
+   <rect x="160" y="336" width="190" height="34" rx="8" fill="#C044D9"/><rect x="160" y="416" width="150" height="34" rx="8" fill="#C7FF3D"/>
+   <rect x="160" y="496" width="210" height="34" rx="8" fill="#C7FF3D"/><rect x="160" y="576" width="120" height="34" rx="8" fill="#C044D9"/>
+  </g>
+ </svg>
+</div>
+
+<!-- water level chart along the bottom row -->
+<div class="p" style="left:14px;top:880px;width:2072px;height:426px;padding:22px 28px">
+ <h2>Water level · last 6 hours and forecast</h2>
+ <svg width="2016" height="330" viewBox="0 0 2016 330">
+  <defs><linearGradient id="fill" x1="0" x2="1"><stop offset="0" stop-color="#C7FF3D" stop-opacity=".35"/><stop offset=".72" stop-color="#C7FF3D" stop-opacity=".35"/><stop offset=".76" stop-color="#F05BB5" stop-opacity=".45"/><stop offset="1" stop-color="#F05BB5" stop-opacity=".45"/></linearGradient>
+  <linearGradient id="line" x1="0" x2="1"><stop offset="0" stop-color="#C7FF3D"/><stop offset=".72" stop-color="#C7FF3D"/><stop offset=".76" stop-color="#F05BB5"/></linearGradient></defs>
+  <g stroke="#2a2140" stroke-width="2"><path d="M0 60H2016M0 150H2016M0 240H2016"/></g>
+  <path d="M0 260C200 250 380 240 560 215S900 170 1100 150 1350 120 1460 100L2016 30V330H0Z" fill="url(#fill)"/>
+  <path d="M0 260C200 250 380 240 560 215S900 170 1100 150 1350 120 1460 100" fill="none" stroke="url(#line)" stroke-width="8"/>
+  <path d="M1460 100L2016 30" fill="none" stroke="#F05BB5" stroke-width="8" stroke-dasharray="26 18"/>
+  <path d="M0 140H2016" stroke="#edb64c" stroke-width="4" stroke-dasharray="14 12"/>
+  <text x="12" y="128" font-size="26" fill="#edb64c">warning 1.40 m</text>
+  <circle cx="1460" cy="100" r="16" fill="#F05BB5"/><line x1="1460" y1="0" x2="1460" y2="330" stroke="#e9e1f0" stroke-width="3" opacity=".6"/>
+  <text x="1482" y="310" font-size="28" fill="#e9e1f0">now</text>
+ </svg>
+</div>
+</body>

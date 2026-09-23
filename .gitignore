@@ -5,3 +5,6 @@ node_modules/
 
 # Generated from assets/kenney by npm run assets
 public/models/
+
+# Python bytecode from the Blender scripts
+__pycache__/
