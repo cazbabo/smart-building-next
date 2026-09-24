@@ -195,5 +195,7 @@ export function startPresentation({apply,blocked,reduced,announce,pins}){
   // Measured from where the fade above the band is still light enough to read
   // a pin through, not from the text itself.
   get bandTop(){return fadeTop;},
+  /** The top of the band's text, which pins keep clear of. */
+  get textTop(){return stage.offsetTop+cardEl.offsetTop-18;},
  };
 }

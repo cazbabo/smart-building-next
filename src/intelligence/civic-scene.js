@@ -134,7 +134,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  const FIT=.79;                   // vertical extent as a share of the frame width
  const goal=new T.Vector3(),look=new T.Vector3();
  let centred=false,chapter='overview',night=0;
- let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12,lift=0,layoutBias=.12,layoutLift=0,pins=[];
+ let width=0,height=0,scheduled=false,explore=false,span=104,goalSpan=104,paused=false,last=0,time=0,visible=true,bias=.12,lift=0,layoutBias=.12,layoutLift=0,layoutFit=null,pins=[];
  // Pointer parallax. The camera swings a little around the city as the cursor
  // crosses the page, which is what gives a still isometric model any sense of
  // depth. Explore drives the camera itself, so it opts out.
@@ -176,7 +176,11 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
  function frame(){
   const w=width||host.clientWidth,h=height||host.clientHeight;if(!w||!h)return;
   // Fit both axes: landscape explore must not crop the city vertically.
-  const horizontal=Math.max(span,span*FIT*w/h);
+  // A layout may fit tighter than the whole city's height: the presentation's
+  // band covers the bottom of the frame anyway, and fitting by height left a
+  // wide screen mostly empty either side.
+  const fit=explore||centred||layoutFit===null?FIT:layoutFit;
+  const horizontal=Math.max(span,span*fit*w/h);
   camera.left=-horizontal/2;camera.right=horizontal/2;camera.top=horizontal/2*h/w;camera.bottom=-camera.top;
   // The narrative scrolls over the right of the same canvas, so the city is
   // pushed left of centre by that much of the frame and the text lands on empty
@@ -230,7 +234,7 @@ export async function mountCivicScene(host,{onReady,onSelect,onLabels}) {
   /** Where the story's text sits: bias pushes the city sideways, lift raises it. */
   // A layout brings its own chapter framings: a frame chosen for a city pushed
   // aside does not hold the same subject once the city is centred and lifted.
-  setLayout({bias:b=.12,lift:l=0,frames:f={}}){layoutBias=b;layoutLift=l;frames={...FRAMES,...f};if(!centred){bias=b;lift=l;}aimAt(centred?'hero':chapter);},
+  setLayout({bias:b=.12,lift:l=0,fit:t=null,frames:f={}}){layoutBias=b;layoutLift=l;layoutFit=t;frames={...FRAMES,...f};if(!centred){bias=b;lift=l;}aimAt(centred?'hero':chapter);},
   /** World points to project for the chapter's numbered pins. */
   setPins(points){pins=points??[];invalidate();},
   setExplore(value){explore=value;controls.enabled=value;resize();},home,

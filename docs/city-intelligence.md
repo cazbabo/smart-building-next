@@ -244,7 +244,26 @@ the night layer had not yet faded but the narrative's wash had begun.
   before district names, which give way to them, and none is placed inside the
   band's fade. The presentation has its own chapter framings, since a frame chosen
   for a city pushed aside does not hold the same subject once it is centred.
-- **Furniture.** The live readout becomes a compact chip top left; Back and Next
+- **Side panels on wide screens** (`side-panels.js`). Fitting the city between
+  the header and the band made its height the limit, so a wide screen was left
+  empty a third either side. The camera now fits by width and lets the city's
+  lower edge run under the band, and screens from 1760 pixels wide (and 761
+  high) carry two glass panels in the sides. Left, *Live signals*: readings
+  arriving with a time, newest on top, one every 2.2 s, their content following
+  the chapter - separate systems, routed to the command center, sensors, the
+  flood alert with the live water level turning pink past 1.40 m, the forecast.
+  Right, *Connected systems*: seven sources at 0 / 7 while the story is about
+  separate systems, counting up as the Data chapter's routes connect on the
+  model, 7 / 7 after; it also carries the only key to what lime and pink mean on
+  the model. Narrower screens have no panels and a tighter zoom. Rows are built
+  when one arrives and only the live values are written after that; rebuilding
+  the list every frame during playback restarted the arrival animation each
+  time. The panels hold nothing the band does not, so they are hidden from
+  assistive technology; pause stops the feed.
+- **Pins sit in their own layer above the band.** Left in the canvas's layer
+  they were washed out by the band's fade whenever a point sat low in the frame;
+  they now stay crisp over the fade and only keep clear of the band's text.
+ The live readout becomes a compact chip top left; Back and Next
   sit top right; Explore, Pause and the fine print sit in one row at the foot.
   Those last two live in the canvas's layer, which the band covers, so the
   presentation moves them into the band's own layer - they were ghosted and

@@ -2,6 +2,7 @@ import './style.css';
 import {sections,places} from './long-story.js';
 import {storyTelemetry} from './story-state.js';
 import {startPresentation} from './present.js';
+import {createSidePanels} from './side-panels.js';
 const $=s=>document.querySelector(s);
 const mark='<svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 12 7v13l-12 6L4 23V10Z" fill="#C7FF3D" stroke="currentColor" stroke-width="1.4"/><path d="m4 10 12 7 12-7M16 17v12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
 const phase=i=>i<2?'The city today':i===2?'Phase 1':i<6?'Phase 2':'Phase 3';
@@ -10,7 +11,7 @@ $('#app').innerHTML=`<a class="skip" href="#overview">Skip to story</a><header c
 <div class="narrative-column">${sections.map((s,i)=>`<section class="story-section" id="${s.id}" aria-labelledby="title-${s.id}"><div class="section-phase"><span>${String(i+1).padStart(2,'0')} / 08</span>${s.phase}</div><h1 id="title-${s.id}">${s.title.replaceAll('\n','<br>')}</h1><p class="section-intro">${s.intro}</p>${['foundation','iot','ai'].includes(s.id)?`<div class="phase-band"><span>${phase(i)}</span><b>${s.id==='foundation'?'Connect existing data':s.id==='iot'?'See field conditions':'Anticipate and recommend'}</b></div>`:''}<ol class="story-points">${s.points.map(([head,body],j)=>`<li><span>${String(j+1).padStart(2,'0')}</span><div><h2>${head}</h2><p>${body}</p></div></li>`).join('')}</ol>${s.id==='priorities'?`<div class="district-list">${Object.entries(places).map(([id,p])=>`<button data-place="${id}">${p.name}<span>+</span></button>`).join('')}</div>`:''}<div class="takeaway">${s.takeaway}</div>${i<7?`<a class="next-section" href="#${sections[i+1].id}">Continue to ${sections[i+1].phase}<span>↓</span></a>`:'<a class="next-section" href="#overview">Restart the story<span>↑</span></a>'}</section>`).join('')}</div></main>
 <footer class="page-footer"><span>City Intelligence Platform</span><span>Data Consolidation → IoT Data Integration → AI-Powered Intelligence</span><a href="#overview">Back to top ↑</a></footer>
 <dialog id="place-detail" aria-labelledby="place-title"><button id="close-detail" aria-label="Close details">×</button><span class="detail-eyebrow">How this solution works</span><h2 id="place-title"></h2><div id="detail-copy"></div><button id="focus-place">View this district in 3D</button><small>Illustrative workflow. No live device control.</small></dialog><div id="announcement" role="status" class="sr"></div>`;
-let scene=null,current='overview',activePlace='civic',explore=false,lastOpener=null,chapterProgress=0,paused=false,presentation=null;
+let side=null,scene=null,current='overview',activePlace='civic',explore=false,lastOpener=null,chapterProgress=0,paused=false,presentation=null;
 const compact=matchMedia('(max-width: 800px)');
 // A desktop screen presents the story a chapter at a time (present.js); a phone
 // keeps the scrolling page, which is what a phone is good at, and ?scroll keeps
@@ -67,6 +68,7 @@ function applyState(id,progress,night){
  $('#activity-value').textContent=current==='flood'?`${data.level.toFixed(2)} m`:current==='ai'?`1.60 m → ${data.forecast.toFixed(2)} m`:a[1];
  $('#activity-copy').textContent=a[2];$('#chapter-fill').style.width=`${chapterProgress*100}%`;
  scene?.setStage(current,chapterProgress);
+ side?.update(current,chapterProgress);
  document.querySelectorAll('.site-header nav a').forEach(a=>a.setAttribute('aria-current',a.hash===`#${current}`?'step':'false'));
 }
 
@@ -132,6 +134,7 @@ function placeLabels(labels){
  // stands to the right, and labels must stay above the band.
  const column=presentation?101:innerWidth>800?($('.narrative-column').offsetLeft-165)/vw*100:101;
  // bandTop is in page pixels; the view starts below the header.
+ const pinFloor=presentation?(presentation.textTop-$('.visual-column').offsetTop)/vh*100:104;
  const floor=presentation?(presentation.bandTop-$('.visual-column').offsetTop)/vh*100-1:104;
  // The chapter heading floats over the top-left of the same stage. A label
  // landing on it made both unreadable, so it is seeded as already taken. Its
@@ -141,11 +144,17 @@ function placeLabels(labels){
  // are placed in, so this costs no more layout than the two reads above.
  const head=presentation?$('.scene-readout'):$('.view-heading');
  const taken=[[0,0,(head.offsetLeft+head.offsetWidth+10)/vw*100,(head.offsetTop+head.offsetHeight+8)/vh*100]];
+ // The side panels, when the screen is wide enough to show them.
+ if(side)for(const panel of document.querySelectorAll('.side-panel')){
+  if(!panel.offsetWidth)continue;
+  const r=panel.getBoundingClientRect(),v=view.getBoundingClientRect();
+  taken.push([(r.left-v.left-8)/vw*100,(r.top-v.top-8)/vh*100,(r.right-v.left+8)/vw*100,(r.bottom-v.top+8)/vh*100]);
+ }
  // Pins go down first: a pin is what a point on screen is about, a district
  // name only context, so a name that would cover a pin gives way.
  for(const [i,pin] of pinEls.entries()){
   const spot=labels[`pin${i}`];
-  pin.hidden=!spot||!pinOn[i]||spot[1]>floor||spot[1]<2;
+  pin.hidden=!spot||!pinOn[i]||spot[1]>pinFloor||spot[1]<2;
   if(pin.hidden)continue;
   pin.style.left=`${spot[0]}%`;pin.style.top=`${spot[1]}%`;
   const rx=20/vw*100,ry=20/vh*100;
@@ -184,9 +193,18 @@ $('#explore').onclick=()=>setExplore(!explore);$('#hero-explore').onclick=()=>{s
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{$('#announcement').textContent='Fullscreen is unavailable in this browser.';}};
 addEventListener('keydown',e=>{if(e.key==='Escape'&&explore&&!$('#place-detail').open)setExplore(false);});
 async function init(){if(compact.matches){$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Lightweight city view';return;}
- try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});if(presentation){scene.setLayout({bias:0,lift:.1,frames:PRESENT_FRAMES});scene.setPins(pins.points);presentation.refresh();}else syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
+ try{const {mountCivicScene}=await import('./civic-scene.js');scene=await mountCivicScene($('#city-canvas'),{onLabels:labels=>placeLabels(labels),onSelect:id=>showPlace(id),onReady:ready=>{$('#loading').hidden=true;$('#city-poster').hidden=ready;$('#explore').hidden=!ready;$('#motion-toggle').hidden=!ready;$('#focus-place').hidden=!ready;$('#mode-label').textContent=ready?'Interactive 3D model':'Static preview · 3D unavailable';$('#city-view').classList.toggle('static-preview',!ready);$('.map-names').hidden=!ready;}});if(presentation){presentLayout();scene.setPins(pins.points);presentation.refresh();}else syncSection();scene.setStage(current,chapterProgress);}catch(e){console.error('3D unavailable',e);$('#loading').hidden=true;$('#explore').hidden=true;$('#focus-place').hidden=true;$('#motion-toggle').hidden=true;$('#mode-label').textContent='Static preview · 3D unavailable';$('.map-names').hidden=true;}}
 $('#view-instruction').textContent=HINT;
-if(presenting){$('#city-view').append(...pinEls);document.addEventListener('pointerover',e=>{const pin=e.target.closest?.('.present-pin');if(pin)pins.highlight(pinEls.indexOf(pin));else if(!e.target.closest?.('[data-pin]'))pins.highlight(-1);});}
+if(presenting){
+ // Pins get their own layer over the band, the same box as the city view, so
+ // a point low in the frame stays crisp over the band's fade instead of washed
+ // out under it; they only have to keep clear of the band's text.
+ const pinLayer=document.createElement('div');pinLayer.className='present-pins';pinLayer.append(...pinEls);document.body.append(pinLayer);document.addEventListener('pointerover',e=>{const pin=e.target.closest?.('.present-pin');if(pin)pins.highlight(pinEls.indexOf(pin));else if(!e.target.closest?.('[data-pin]'))pins.highlight(-1);});}
+// The panels take the sides of a wide screen, so there the city fits a little
+// less tightly; below that width there are no panels and it can fill more.
+const panelsFit=matchMedia('(min-width: 1760px) and (min-height: 761px)');
+function presentLayout(){scene?.setLayout({bias:0,lift:.05,fit:panelsFit.matches?.72:.67,frames:PRESENT_FRAMES});}
+if(presenting){side=createSidePanels(document.querySelector('.experience-grid'),{paused:()=>paused});panelsFit.addEventListener('change',presentLayout);}
 if(presenting)presentation=startPresentation({
  pins,
  apply:applyState,
