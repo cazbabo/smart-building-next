@@ -2,8 +2,8 @@
 //
 //   node scripts/video/frames.mjs <work dir> <out.mp4> [first] [last]
 //
-// <work dir> holds master.png (scripts/blender/plate.py) and master.json
-// (scripts/video/timeline.mjs). Frames are screenshots of the page after
+// <work dir> holds master-day.png and master-dusk.png (scripts/blender/plate.py)
+// and master.json (scripts/video/timeline.mjs). Frames are screenshots of the page after
 // renderFrame(t), so nothing depends on the machine's frame rate. Needs
 // Playwright (PLAYWRIGHT / CHROMIUM env to point at an install) and an ffmpeg
 // with libx264 (FFMPEG, or the one imageio-ffmpeg ships).
@@ -19,7 +19,7 @@ const {chromium} = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const types = {'.html': 'text/html', '.mjs': 'text/javascript', '.json': 'application/json', '.png': 'image/png'};
 const server = http.createServer((req, res) => {
  const name = decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/, '');
- const file = name.startsWith('master.') ? path.join(work, name) : path.join(here, name || 'film.html');
+ const file = /^master[.-]/.test(name) ? path.join(work, name) : path.join(here, name || 'film.html');
  if (!fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
  res.writeHead(200, {'content-type': types[path.extname(file)] ?? 'application/octet-stream'});
  fs.createReadStream(file).pipe(res);

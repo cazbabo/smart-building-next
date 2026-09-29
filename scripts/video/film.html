@@ -1,52 +1,63 @@
 <!doctype html>
 <!-- City Intelligence, the film. 1920 x 1080, 18 s. Each frame is drawn by
-     window.renderFrame(t): the camera's crop of the Cycles master still, then
-     the data layer projected through the same camera. Nothing here runs on a
-     clock of its own, so scripts/video/frames.mjs can step it frame by frame. -->
+     window.renderFrame(t): the camera's crop of the Cycles master stills - day
+     and dusk, cross-faded - then the data layer projected through the same
+     camera. Nothing here runs on a clock of its own, so
+     scripts/video/frames.mjs can step it frame by frame.
+
+     The story is told at dusk. It opens on the city by day; as the systems
+     connect, the light goes and the windows come on, and the routes, sensors
+     and forecast glow against the dark; the end card is day again. Every
+     colour on the page follows the same dusk amount through the custom
+     properties set on :root each frame. -->
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=block" rel="stylesheet">
 <style>
  *{box-sizing:border-box;margin:0}
- html,body{width:1920px;height:1080px;overflow:hidden;background:#FAF8FC;font-family:'DM Sans',Arial,sans-serif;color:#52205E}
+ html,body{width:1920px;height:1080px;overflow:hidden;background:rgb(var(--bg));font-family:'DM Sans',Arial,sans-serif;color:var(--ink)}
+ :root{--bg:250,248,252;--ink:#52205E;--accent:#983AAC;--muted:#75617C;--quiet:#8B7197;--pill:#E9DEEF;--pill-ink:#71507F}
  canvas,svg,.layer{position:absolute;inset:0;width:1920px;height:1080px}
  .layer{pointer-events:none}
- #veil{position:absolute;inset:0;background:#FAF8FC}
+ #veil{position:absolute;inset:0;background:rgb(var(--bg))}
  /* The title and the end card sit over the city's left half; this gives the
     type its own ground without hiding the city behind it. */
- #side{position:absolute;inset:0;background:linear-gradient(90deg,#FAF8FC 0,#FAF8FCF0 34%,#FAF8FC99 52%,#FAF8FC00 72%)}
- #shade{position:absolute;inset:auto 0 0;height:420px;background:linear-gradient(to top,#FAF8FC 0,#FAF8FCEE 38%,#FAF8FC00)}
+ #side{position:absolute;inset:0;background:linear-gradient(90deg,rgb(var(--bg)) 0,rgba(var(--bg),.94) 34%,rgba(var(--bg),.6) 52%,rgba(var(--bg),0) 72%)}
+ #shade{position:absolute;inset:auto 0 0;height:420px;background:linear-gradient(to top,rgb(var(--bg)) 0,rgba(var(--bg),.93) 38%,rgba(var(--bg),0))}
  .mark{position:absolute;right:88px;bottom:84px;display:flex;align-items:center;gap:14px;font-size:24px;font-weight:600;letter-spacing:-.5px}
  .mark svg{position:static;width:40px;height:40px}
- .tag{position:absolute;left:88px;display:flex;align-items:center;gap:14px;font-size:17px;color:#983AAC;font-weight:500}
- .tag b{font-size:13px;font-weight:500;background:#E9DEEF;color:#71507F;border-radius:20px;padding:6px 12px}
+ .tag{position:absolute;left:88px;display:flex;align-items:center;gap:14px;font-size:17px;color:var(--accent);font-weight:500}
+ .tag b{font-size:13px;font-weight:500;background:var(--pill);color:var(--pill-ink);border-radius:20px;padding:6px 12px}
  .title{position:absolute;left:88px;font-size:64px;line-height:1.04;letter-spacing:-.045em;font-weight:500;white-space:nowrap}
  .word{display:inline-block;will-change:transform}
- .sub{position:absolute;left:88px;font-size:22px;line-height:1.5;color:#75617C;max-width:720px}
- .chip{position:absolute;padding:16px 22px;border-radius:18px;background:#52205EF0;color:#fff;box-shadow:0 18px 50px #52205E30}
+ .sub{position:absolute;left:88px;font-size:22px;line-height:1.5;max-width:720px;color:var(--muted)}
+ .chip{position:absolute;padding:16px 22px;border-radius:18px;background:#52205EF0;color:#fff;box-shadow:0 18px 50px #52205E30,inset 0 0 0 1px #FFFFFF14}
  .chip span{display:block;font-size:14px;color:#DFB7E9;margin-bottom:4px}
  .chip strong{font-size:34px;font-weight:600;letter-spacing:-.02em;color:#C7FF3D;font-variant-numeric:tabular-nums}
  .chip.pink strong{color:#FFA5DA}
- .card{position:absolute;width:420px;padding:20px 24px;border-radius:18px;background:#FFFFFFE6;box-shadow:0 20px 60px #52205E24,inset 0 0 0 1px #fff}
+ .card{position:absolute;width:420px;color:#52205E;padding:20px 24px;border-radius:18px;background:#FFFFFFE6;box-shadow:0 20px 60px #52205E24,inset 0 0 0 1px #fff}
  .card h4{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#B8327F;margin-bottom:8px}
  .card p{font-size:21px;line-height:1.4}
  .read{position:absolute;transform:translate(-50%,-100%);padding:8px 14px;border-radius:12px;background:#FFFFFFEB;box-shadow:0 10px 30px #52205E26;font-size:17px;white-space:nowrap}
  .read b{color:#52205E}.read span{color:#75617C;margin-left:6px}
- .note{position:absolute;right:88px;bottom:44px;font-size:15px;color:#8B7197}
+ .note{position:absolute;right:88px;bottom:44px;font-size:15px;color:var(--quiet)}
  .steps{position:absolute;left:88px;display:flex;gap:14px}
- .steps div{padding:12px 20px;border-radius:999px;font-size:20px;font-weight:600;border:2px solid #E3D6EA;background:#fff}
+ .steps div{color:#52205E;padding:12px 20px;border-radius:999px;font-size:20px;font-weight:600;border:2px solid #E3D6EA;background:#fff}
 </style>
 <canvas id="plate" width="1920" height="1080"></canvas>
-<svg id="data" viewBox="0 0 1920 1080"></svg>
+<svg id="data" viewBox="0 0 1920 1080"><defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs><g id="halo" filter="url(#glow)"></g><g id="lines"></g></svg>
 <div class="layer" id="ui"></div>
 <script type="module">
 import {cameraAt,plane,BEATS,WIDTH,HEIGHT} from './timeline.mjs';
 
 const master=await (await fetch('./master.json')).json();
-const still=new Image();still.src='./master.png';await still.decode();
-const ctx=document.getElementById('plate').getContext('2d');
+async function load(src){const i=new Image();i.src=src;try{await i.decode();return i;}catch{return null;}}
+const day=await load('./master-day.png')??await load('./master.png'),dusk=await load('./master-dusk.png');
+const plateEl=document.getElementById('plate'),ctx=plateEl.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const svg=document.getElementById('data'),ui=document.getElementById('ui');
+// Scratch canvas for the lens: bloom and tilt-shift are drawn through it.
+const lens=Object.assign(document.createElement('canvas'),{width:WIDTH,height:HEIGHT}).getContext('2d');
+const halo=document.getElementById('halo'),lines=document.getElementById('lines'),ui=document.getElementById('ui');
 
 // ---- helpers ---------------------------------------------------------------
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
@@ -56,6 +67,18 @@ const back=x=>{x=clamp(x);const c=1.6;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(
 const span=(t,[a,b])=>clamp((t-a)/(b-a));
 const within=(t,[a,b],pad=0)=>t>=a-pad&&t<b+pad;
 const mix=(a,b,u)=>a+(b-a)*u;
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const mixRgb=(a,b,u)=>{const x=rgb(a),y=rgb(b);return x.map((v,i)=>Math.round(mix(v,y[i],u)));};
+const mixHex=(a,b,u)=>'#'+mixRgb(a,b,u).map(v=>v.toString(16).padStart(2,'0')).join('');
+
+// How far into dusk the city is at time t.
+// The light goes while the title leaves, so the first chapter's words arrive
+// on the dark and never sit mid-grey on mid-grey.
+const DUSK_IN=[BEATS.title[1]-.7,BEATS.title[1]+.4],DUSK_OUT=[BEATS.end[0]-.1,BEATS.end[0]+1];
+const duskAt=t=>dusk?smooth(span(t,DUSK_IN))*(1-smooth(span(t,DUSK_OUT))):0;
+// Page colours by day and at dusk.
+const PALETTE={bg:['#FAF8FC','#15112A'],ink:['#52205E','#F7F1FB'],accent:['#983AAC','#E9A8F7'],
+ muted:['#75617C','#BDB0CE'],quiet:['#8B7197','#9E90B4'],pill:['#E9DEEF','#3A2D55'],'pill-ink':['#71507F','#E4D6F0']};
 let cam;
 /** World point -> screen pixels, through this frame's camera. */
 function screen(p){
@@ -98,10 +121,35 @@ window.renderFrame=function(t){
  // Plate: this frame's crop of the master still.
  const k=master.density,[tu,tv]=plane(cam.target),h=cam.scale*HEIGHT/WIDTH;
  const sx=(tu-cam.scale/2-master.u0)*k,sy=(master.v1-(tv+h/2))*k;
- ctx.fillStyle='#FAF8FC';ctx.fillRect(0,0,WIDTH,HEIGHT);
- ctx.drawImage(still,sx,sy,cam.scale*k,h*k,0,0,WIDTH,HEIGHT);
+ const dk=duskAt(t),root=document.documentElement.style;
+ for(const [name,[a,b]] of Object.entries(PALETTE))
+  name==='bg'?root.setProperty('--bg',mixRgb(a,b,dk).join(',')):root.setProperty('--'+name,mixHex(a,b,dk));
+ ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';ctx.filter='none';
+ ctx.fillStyle=mixHex(...PALETTE.bg,dk);ctx.fillRect(0,0,WIDTH,HEIGHT);
+ const crop=[sx,sy,cam.scale*k,h*k,0,0,WIDTH,HEIGHT];
+ if(dk<1)ctx.drawImage(day,...crop);
+ if(dk>0){ctx.globalAlpha=dk;ctx.drawImage(dusk,...crop);ctx.globalAlpha=1;}
+ // Bloom: the lit windows and lamps bleed a little light at dusk.
+ if(dk>0){
+  lens.clearRect(0,0,WIDTH,HEIGHT);lens.filter='blur(16px) brightness(1.15)';lens.drawImage(plateEl,0,0);lens.filter='none';
+  ctx.globalCompositeOperation='screen';ctx.globalAlpha=.42*dk;ctx.drawImage(lens.canvas,0,0);
+  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+ }
+ // Tilt-shift: the top and bottom of the frame fall a little out of focus, a
+ // model city seen through a lens. The data layer on top stays sharp.
+ lens.clearRect(0,0,WIDTH,HEIGHT);lens.filter='blur(3.5px)';lens.drawImage(plateEl,0,0);lens.filter='none';
+ const focus=lens.createLinearGradient(0,0,0,HEIGHT);
+ focus.addColorStop(0,'#000');focus.addColorStop(.3,'#0000');focus.addColorStop(.66,'#0000');focus.addColorStop(1,'#000');
+ lens.globalCompositeOperation='destination-in';lens.fillStyle=focus;lens.fillRect(0,0,WIDTH,HEIGHT);lens.globalCompositeOperation='source-over';
+ ctx.drawImage(lens.canvas,0,0);
+ // Vignette at dusk.
+ if(dk>0){
+  const v=ctx.createRadialGradient(WIDTH*.55,HEIGHT*.45,HEIGHT*.35,WIDTH*.55,HEIGHT*.45,WIDTH*.72);
+  v.addColorStop(0,'#0B081800');v.addColorStop(1,`rgba(11,8,24,${.55*dk})`);
+  ctx.fillStyle=v;ctx.fillRect(0,0,WIDTH,HEIGHT);
+ }
 
- let g='',html='';
+ let g='',glow='',html='';
  // Routes: drawn in during Data, kept through AI, packets always moving.
  const draw=span(t,[BEATS.data[0]+.3,BEATS.data[1]-.6]);
  const routesOn=t>=BEATS.data[0]&&t<BEATS.end[0]+.6;
@@ -114,10 +162,12 @@ window.renderFrame=function(t){
    const d='M'+pts.slice(0,n).map(p=>p.map(v=>v.toFixed(1)).join(',')).join('L');
    const col=r.pink?'#F05BB5':'#C7FF3D';
    g+=`<path d="${d}" fill="none" stroke="${col}" stroke-opacity="${.3*routeFade}" stroke-width="14" stroke-linecap="round"/>`;
+   glow+=`<path d="${d}" fill="none" stroke="${col}" stroke-opacity="${(.25+.55*dk)*routeFade}" stroke-width="${10+10*dk}" stroke-linecap="round"/>`;
    g+=`<path d="${d}" fill="none" stroke="${col}" stroke-opacity="${routeFade}" stroke-width="4.5" stroke-linecap="round"/>`;
    if(local>=1)for(let j=0;j<3;j++){
     const u=((t*.28+j/3+i*.07)%1),p=pts[Math.floor(u*(pts.length-1))];
     g+=`<circle cx="${p[0]}" cy="${p[1]}" r="7" fill="${col}" opacity="${routeFade}"/>`;
+    glow+=`<circle cx="${p[0]}" cy="${p[1]}" r="16" fill="${col}" opacity="${dk*routeFade}"/>`;
    }
    // Where each district's route starts, a small ring pulses once as it joins.
    const [ox,oy]=pts[0],pulse=clamp((local-.02)/.5);
@@ -155,7 +205,7 @@ window.renderFrame=function(t){
   const rc=out((t-BEATS.ai[0]-2.6)/.7);
   html+=`<div class="card" style="right:88px;top:${150+(1-rc)*24}px;opacity:${ai*rc}"><h4>AI recommendation</h4><p>Review the exposed access road and prepare the response team.</p><p style="font-size:15px;color:#8B7197;margin-top:10px">Illustrative forecast · a person decides</p></div>`;
  }
- svg.innerHTML=g;
+ lines.innerHTML=g;halo.innerHTML=glow;
 
  // Titles and furniture.
  const titleOn=beat(t,BEATS.title,.01,.55),endOn=smooth((t-BEATS.end[0]-.1)/.7);
