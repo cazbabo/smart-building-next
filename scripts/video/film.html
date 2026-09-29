@@ -30,6 +30,9 @@
  .tag b{font-size:13px;font-weight:500;background:var(--pill);color:var(--pill-ink);border-radius:20px;padding:6px 12px}
  .title{position:absolute;left:88px;font-size:64px;line-height:1.04;letter-spacing:-.045em;font-weight:500;white-space:nowrap}
  .word{display:inline-block;will-change:transform}
+ /* The opening and the end card are daylight scenes: their type keeps the day
+    colours while the light changes under it, so it fades out, or in, clean. */
+ .daylit{--ink:#52205E;--accent:#983AAC;--muted:#75617C;--pill:#E9DEEF;--pill-ink:#71507F;color:var(--ink)}
  .sub{position:absolute;left:88px;font-size:22px;line-height:1.5;max-width:720px;color:var(--muted)}
  .chip{position:absolute;padding:16px 22px;border-radius:18px;background:#52205EF0;color:#fff;box-shadow:0 18px 50px #52205E30,inset 0 0 0 1px #FFFFFF14}
  .chip span{display:block;font-size:14px;color:#DFB7E9;margin-bottom:4px}
@@ -74,7 +77,7 @@ const mixHex=(a,b,u)=>'#'+mixRgb(a,b,u).map(v=>v.toString(16).padStart(2,'0')).j
 // How far into dusk the city is at time t.
 // The light goes while the title leaves, so the first chapter's words arrive
 // on the dark and never sit mid-grey on mid-grey.
-const DUSK_IN=[BEATS.title[1]-.7,BEATS.title[1]+.4],DUSK_OUT=[BEATS.end[0]-.1,BEATS.end[0]+1];
+const DUSK_IN=[BEATS.title[1]-.7,BEATS.title[1]+.4],DUSK_OUT=[BEATS.end[0]-.45,BEATS.end[0]+.3];
 const duskAt=t=>dusk?smooth(span(t,DUSK_IN))*(1-smooth(span(t,DUSK_OUT))):0;
 // Page colours by day and at dusk.
 const PALETTE={bg:['#FAF8FC','#15112A'],ink:['#52205E','#F7F1FB'],accent:['#983AAC','#E9A8F7'],
@@ -216,9 +219,10 @@ window.renderFrame=function(t){
  html=`<div id="veil" style="opacity:${veil}"></div><div id="side" style="opacity:${side}"></div><div id="shade" style="opacity:${(1-endOn)*smooth((t-BEATS.title[1]+.6)/.6)}"></div>`+html;
  html+=`<div class="mark">${mark}City Intelligence</div>`;
  if(titleOn>0){
+  html+=`<div class="daylit">`;
   html+=`<div class="tag" style="top:420px;opacity:${titleOn*out(t/.5)}"><b>Presale overview</b>Smart city platform</div>`;
   html+=`<div class="title" style="top:470px;font-size:96px;opacity:${titleOn}">${words('From data to',.25,t)}<br>${words('a city in sync.',.55,t)}</div>`;
-  html+=`<div class="sub" style="top:690px;opacity:${titleOn*out((t-1.1)/.6)}">One picture of the city, built from the systems that already run it.</div>`;
+  html+=`<div class="sub" style="top:690px;opacity:${titleOn*out((t-1.1)/.6)}">One picture of the city, built from the systems that already run it.</div></div>`;
  }
  const chapters=[
   [BEATS.data,'01 · Phase 1','Data Consolidation','Connect the systems','you already have.'],
@@ -238,7 +242,7 @@ window.renderFrame=function(t){
   html+=`<div class="chip" style="right:88px;top:150px;opacity:${countOn}"><span>Connected systems</span><strong>${n} / 7</strong>${t>BEATS.iot[0]?'<span style="margin:6px 0 0;color:#E1CDE8">+ 128 IoT sensors online</span>':''}</div>`;
  }
  if(endOn>0){
-  html+=`<div class="title" style="top:360px;font-size:92px;opacity:${endOn}">${words('Connect first.',BEATS.end[0]+.15,t)}<br>${words('Expand with purpose.',BEATS.end[0]+.4,t)}</div>`;
+  html+=`<div class="title daylit" style="top:360px;font-size:92px;opacity:${endOn}">${words('Connect first.',BEATS.end[0]+.15,t)}<br>${words('Expand with purpose.',BEATS.end[0]+.4,t)}</div>`;
   const s=out((t-BEATS.end[0]-.9)/.6);
   html+=`<div class="steps" style="top:600px;opacity:${s};transform:translateY(${(1-s)*16}px)"><div style="border-color:#C7FF3D">Data</div><div style="border:0;background:none;color:#B9A7C6">→</div><div style="border-color:#C7FF3D">IoT</div><div style="border:0;background:none;color:#B9A7C6">→</div><div style="border-color:#F05BB5">AI</div></div>`;
  }
