@@ -115,14 +115,10 @@ def light_up(objects, amount):
             nt.links.new(tint.outputs[2], bsdf.inputs['Emission Color'])
 
 
-def main():
-    prefix, master_path, out = sys.argv[1:4]
-    samples = int(sys.argv[4]) if len(sys.argv) > 4 else 64
-    name = sys.argv[5] if len(sys.argv) > 5 else 'day'
-    look = {**LOOKS[name], **json.loads(os.environ.get('PLATE_LOOK', '{}'))}
-    m = json.load(open(master_path))
-    scene = reset()
-    objects = load(prefix, {'ground', 'solid'})
+def stage(scene, m, look, ground_z=None):
+    """Sun, sky, the catcher under the city and the film's camera: everything
+    about a plate except the city in it. scripts/blender/metropolis.py shares
+    it, so both cities are shot through exactly the same lens."""
     sun_data = bpy.data.lights.new('sun', 'SUN')
     sun_data.energy = look['sun_energy']
     sun_data.angle = math.radians(look['sun_angle'])
@@ -133,15 +129,11 @@ def main():
     bg = scene.world.node_tree.nodes['Background']
     bg.inputs[0].default_value = srgb(look['sky'])
     bg.inputs[1].default_value = look['sky_strength']
-    if look['lit']:
-        light_up(objects, look['lit'])
-        print('lamps', lamp_pools(objects, look['lit']), flush=True)
-    if look['shadow']:
+    if look['shadow'] and ground_z is not None:
         # The city stands on the film's page rather than floating over it: a
         # catcher just under the lowest ground keeps only the shadow, over a
         # transparent film.
-        low = min((o.matrix_world @ v.co).z for o, g in objects if g['role'] == 'ground' for v in o.data.vertices)
-        bpy.ops.mesh.primitive_plane_add(size=1000, location=(0, 0, low - 0.02))
+        bpy.ops.mesh.primitive_plane_add(size=1000, location=(0, 0, ground_z - 0.02))
         bpy.context.object.is_shadow_catcher = True
     cam_data = bpy.data.cameras.new('camera')
     cam_data.type = 'ORTHO'
@@ -154,10 +146,14 @@ def main():
     cam.location = target + V(*m['offset']).normalized() * 400
     cam.rotation_euler = (target - cam.location).to_track_quat('-Z', 'Y').to_euler()
     scene.camera = cam
+
+
+def shoot(scene, m, out, samples):
     r = scene.render
     r.resolution_x, r.resolution_y = m['width'], m['height']
-    # PLATE_REGION=x0,y0,x1,y1 (fractions, y up) renders just that part, for
-    # trying a light without waiting for the whole still.
+    # PLATE_REGION=x0,y0,x1,y1 (fractions, y up) renders just that part, and
+    # PLATE_PERCENT a smaller whole, for trying a light without waiting for
+    # the full still.
     if os.environ.get('PLATE_REGION'):
         r.border_min_x, r.border_min_y, r.border_max_x, r.border_max_y = map(float, os.environ['PLATE_REGION'].split(','))
         r.use_border, r.use_crop_to_border = True, True
@@ -173,7 +169,23 @@ def main():
     scene.view_settings.look = 'AgX - Medium High Contrast'
     t = time.time()
     bpy.ops.render.render(write_still=True)
-    print(f'plate {r.resolution_x}x{r.resolution_y} in {time.time() - t:.0f}s -> {out}', flush=True)
+    print(f'plate {r.resolution_x}x{r.resolution_y} at {r.resolution_percentage}% in {time.time() - t:.0f}s -> {out}', flush=True)
+
+
+def main():
+    prefix, master_path, out = sys.argv[1:4]
+    samples = int(sys.argv[4]) if len(sys.argv) > 4 else 64
+    name = sys.argv[5] if len(sys.argv) > 5 else 'day'
+    look = {**LOOKS[name], **json.loads(os.environ.get('PLATE_LOOK', '{}'))}
+    m = json.load(open(master_path))
+    scene = reset()
+    objects = load(prefix, {'ground', 'solid'})
+    if look['lit']:
+        light_up(objects, look['lit'])
+        print('lamps', lamp_pools(objects, look['lit']), flush=True)
+    low = min((o.matrix_world @ v.co).z for o, g in objects if g['role'] == 'ground' for v in o.data.vertices)
+    stage(scene, m, look, low)
+    shoot(scene, m, out, samples)
 
 
 if __name__ == '__main__':
