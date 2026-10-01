@@ -1322,7 +1322,30 @@ def main():
     look = {**look, 'shadow': False}
     stage(scene, m, look)
     scene.cycles.transparent_max_bounces = 16
-    shoot(scene, m, out, samples)
+    strips = int(os.environ.get('PLATE_STRIPS', 0))
+    if not strips:
+        shoot(scene, m, out, samples)
+        return
+    # In strips, each saved as it finishes: a long still survives the machine
+    # restarting part way, since a rerun skips the strips already on disk.
+    os.environ['PLATE_REGION'] = ''
+    for k in range(strips):
+        part = f'{out}.strip{k}.png'
+        if os.path.exists(part):
+            continue
+        y0, y1 = 1 - (k + 1) / strips, 1 - k / strips
+        os.environ['PLATE_REGION'] = f'0,{y0},1,{y1}'
+        shoot(scene, m, part + '.tmp.png', samples)
+        os.replace(part + '.tmp.png', part)
+    from PIL import Image
+    parts = [Image.open(f'{out}.strip{k}.png') for k in range(strips)]
+    full = Image.new('RGBA', (parts[0].width, sum(p.height for p in parts)))
+    y = 0
+    for p in parts:
+        full.paste(p, (0, y))
+        y += p.height
+    full.save(out)
+    print(f'stitched {strips} strips -> {out} {full.size}', flush=True)
 
 
 def fade_edges(path, m, rs, rd):

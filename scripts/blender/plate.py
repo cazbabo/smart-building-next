@@ -154,6 +154,7 @@ def shoot(scene, m, out, samples):
     # PLATE_REGION=x0,y0,x1,y1 (fractions, y up) renders just that part, and
     # PLATE_PERCENT a smaller whole, for trying a light without waiting for
     # the full still.
+    r.use_border = r.use_crop_to_border = False
     if os.environ.get('PLATE_REGION'):
         r.border_min_x, r.border_min_y, r.border_max_x, r.border_max_y = map(float, os.environ['PLATE_REGION'].split(','))
         r.use_border, r.use_crop_to_border = True, True
