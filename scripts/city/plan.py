@@ -172,7 +172,9 @@ for pts in [[xz(-150, -20), xz(-90, -26), xz(-40, -14)], [xz(-130, 40), xz(-80, 
 khlong_poly = unary_union([LineString(k['pts']).buffer(k['w'] / 2) for k in khlongs])
 
 # ---- the expressway and the skytrain ------------------------------------------------------
-expressway = catmull([xz(-160, 60), xz(-90, 64), xz(-40, 70), xz(10, 66), xz(46, 50), xz(70, 18), xz(80, -30), xz(96, -80), xz(110, -160)], 14)
+# Routed clear of every landmark: west to east south of ICONSIAM and the park,
+# then north past the campus.
+expressway = catmull([xz(-160, 30), xz(-60, 30), xz(20, 30), xz(100, 33), xz(142, 26), xz(158, -12), xz(162, -90), xz(166, -190)], 14)
 EXP_W, EXP_Y = 6.5, 10.5
 # The skytrain: from the river east along the z = -64 arterial, then south
 # down the x = 76 one - two lines meeting at an interchange.
@@ -478,6 +480,12 @@ for block in blocks:
         if free(poly, 0.7):
             take(poly)
             buildings.append(make('house', x, z, w, dep, 0.0, zn))
+
+# Nothing stands under the expressway: its deck runs at EXP_Y, and anything
+# on its line would come up through it. Clear the corridor after the fact, so
+# every other building keeps its place.
+corridor = LineString(expressway).buffer(EXP_W / 2 + 1.8)
+buildings = [b for b in buildings if not rect(b['x'], b['z'], b['w'], b['d'], b['rot']).intersects(corridor)]
 
 # Trees: in the gaps, thicker in the residential edge and the park.
 trees = []
