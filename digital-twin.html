@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#15112A"><meta name="description" content="City Intelligence on a real 3D city streamed from SuperMap iServer: every system connected to one data core."><title>City Intelligence — Digital twin</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/vendor/supermap3d/Widgets/widgets.css"><script src="/vendor/supermap3d/Cesium.js"></script></head><body>
+<div id="twin"></div>
+<div id="labels" aria-hidden="true"></div>
+<header class="tw-top">
+ <a class="tw-brand" href="/city-intelligence.html"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="m16 3 12 7v13l-12 6L4 23V10Z" fill="#C7FF3D" stroke="#52205E" stroke-width="1.4"/><path d="m4 10 12 7 12-7M16 17v12" fill="none" stroke="#52205E" stroke-width="1.4"/></svg>City Intelligence</a>
+ <span class="tw-page">Digital twin</span>
+ <p class="tw-source" id="source" role="status"><i></i><span id="source-text">Connecting to SuperMap iServer…</span></p>
+</header>
+<aside class="tw-chip" id="count" aria-live="polite"><span>Connected systems</span><strong id="count-value">0 / 7</strong><em id="count-iot">+ 128 IoT sensors online</em></aside>
+<aside class="tw-card" id="card" aria-live="polite"><h2>AI recommendation</h2><p>Review the exposed access road south of the lake and prepare the response team.</p><small>Illustrative forecast · a person decides</small></aside>
+<section class="tw-story" id="story" aria-label="Story">
+ <p class="tw-tag"><b id="tag">Overview</b><span id="name">A real 3D city</span></p>
+ <h1 id="title">From data to a city in sync.</h1>
+ <p class="tw-copy" id="copy"></p>
+ <nav class="tw-nav" aria-label="Chapters"><button id="prev" aria-label="Previous chapter">←</button><ol id="dots"></ol><button id="next" class="tw-next">Next</button></nav>
+</section>
+<div class="tw-loading" id="loading" role="status"><div class="tw-spinner" aria-hidden="true"></div><p id="loading-text">Streaming the 3D city from SuperMap iServer…</p></div>
+<p class="tw-note" id="note">SuperMap 3D-CBD demo scene · illustrative mock data · drag to look around</p>
+<script type="module" src="/src/twin/main.js"></script>
+</body></html>

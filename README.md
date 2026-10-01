@@ -18,6 +18,12 @@ npm run build
 
 Vite writes the production site to `dist/` for Vercel deployment.
 
+## Digital twin (SuperMap)
+
+`/digital-twin` tells the City Intelligence story on a real 3D city streamed from SuperMap iServer with SuperMap iClient3D for WebGL. `npm run assets` (part of `npm run build`) copies the SDK from `node_modules/@supermap/iclient3d-webgl` to `public/vendor/supermap3d`.
+
+The page uses SuperMap's public 3D-CBD demo scene. To show another iServer realspace service, open `/digital-twin?scene=<service url>`, for example `https://<host>/iserver/services/<name>/rest/realspace`. The story's pins and routes are placed on the demo scene, so another scene shows the city on its own. The service must allow cross-origin requests.
+
 ## Story chapters
 
 - Living Digital Twin

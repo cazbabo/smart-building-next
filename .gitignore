@@ -8,3 +8,6 @@ public/models/
 
 # Python bytecode from the Blender scripts
 __pycache__/
+
+# Copied from node_modules/@supermap/iclient3d-webgl by npm run assets
+public/vendor/supermap3d/
