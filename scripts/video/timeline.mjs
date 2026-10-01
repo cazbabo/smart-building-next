@@ -20,7 +20,7 @@ export const BEATS = {
 };
 
 // Camera keys: time, look-at point, view width in world units.
-const KEYS = [
+export const KEYS = [
  [0,    [-10, 1, 2],   176],
  [3.2,  [-16, 2, 2],   138],
  [7.4,  [-28, 4, 4],   120],
@@ -47,22 +47,24 @@ function spline(values, i, u) {
 }
 const ease = x => x * x * (3 - 2 * x);
 /** The camera at time t: look-at point and view width. */
-export function cameraAt(t) {
- let i = KEYS.length - 2;
- for (let k = 0; k < KEYS.length - 1; k++) if (t < KEYS[k + 1][0]) { i = k; break; }
- const [t0] = KEYS[i], [t1] = KEYS[i + 1];
+// A city modelled for the film brings its own path: master.json carries it as
+// `keys`, and both the still and the frames read it from there.
+export function cameraAt(t, keys = KEYS) {
+ let i = keys.length - 2;
+ for (let k = 0; k < keys.length - 1; k++) if (t < keys[k + 1][0]) { i = k; break; }
+ const [t0] = keys[i], [t1] = keys[i + 1];
  let u = Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
- if (i === 0 || i === KEYS.length - 2) u = ease(u);
- const target = [0, 1, 2].map(axis => spline(KEYS.map(k => k[1][axis]), i, u));
- return {target, scale: spline(KEYS.map(k => k[2]), i, u)};
+ if (i === 0 || i === keys.length - 2) u = ease(u);
+ const target = [0, 1, 2].map(axis => spline(keys.map(k => k[1][axis]), i, u));
+ return {target, scale: spline(keys.map(k => k[2]), i, u)};
 }
 
 // The master still has to cover every frame's view, at a density that gives
 // the closest shot a full 1920 pixels.
-export function master() {
+export function master(keys = KEYS) {
  let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity, closest = Infinity;
  for (let f = 0; f < FRAMES; f++) {
-  const {target, scale} = cameraAt(f / FPS), [u, v] = plane(target), h = scale * HEIGHT / WIDTH;
+  const {target, scale} = cameraAt(f / FPS, keys), [u, v] = plane(target), h = scale * HEIGHT / WIDTH;
   u0 = Math.min(u0, u - scale / 2); u1 = Math.max(u1, u + scale / 2);
   v0 = Math.min(v0, v - h / 2); v1 = Math.max(v1, v + h / 2);
   closest = Math.min(closest, scale);
@@ -74,14 +76,17 @@ export function master() {
   width: Math.ceil((u1 - u0) * density), height: Math.ceil((v1 - v0) * density)};
 }
 
-// node scripts/video/timeline.mjs out.json - the master still's framing, for Blender.
+// node scripts/video/timeline.mjs out.json [keys.json] - the master still's
+// framing, for Blender; keys.json, a list of [time, [x, y, z], width], replaces
+// the page city's camera path.
 // (The film page imports this module too, where there is no `process`.)
 if (typeof process !== 'undefined' && process.argv[1]?.endsWith('timeline.mjs') && process.argv[2]) {
  const fs = await import('node:fs');
- const m = master();
+ const keys = process.argv[3] ? JSON.parse(fs.readFileSync(process.argv[3], 'utf8')) : null;
+ const m = master(keys ?? KEYS);
  // The still's centre, back on the world's ground plane, is the camera's target.
  const cu = (m.u0 + m.u1) / 2, cv = (m.v0 + m.v1) / 2;
  const target = [0, 1, 2].map(k => RIGHT[k] * cu + UP[k] * cv);
- fs.writeFileSync(process.argv[2], JSON.stringify({...m, target, scale: m.u1 - m.u0, offset: OFFSET}));
+ fs.writeFileSync(process.argv[2], JSON.stringify({...m, target, scale: m.u1 - m.u0, offset: OFFSET, ...(keys ? {keys} : {})}));
  console.log(`master still ${m.width} x ${m.height} px, ${m.density.toFixed(1)} px per unit -> ${process.argv[2]}`);
 }
