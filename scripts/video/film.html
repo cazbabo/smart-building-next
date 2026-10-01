@@ -50,7 +50,7 @@
  .steps div{color:#52205E;padding:12px 20px;border-radius:999px;font-size:20px;font-weight:600;border:2px solid #E3D6EA;background:#fff}
 </style>
 <canvas id="plate" width="1920" height="1080"></canvas>
-<svg id="data" viewBox="0 0 1920 1080"><defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter></defs><g id="halo" filter="url(#glow)"></g><g id="lines"></g></svg>
+<svg id="data" viewBox="0 0 1920 1080"><defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter><linearGradient id="beam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#C7FF3D" stop-opacity=".55"/><stop offset="1" stop-color="#C7FF3D" stop-opacity="0"/></linearGradient></defs><g id="halo" filter="url(#glow)"></g><g id="lines"></g></svg>
 <div class="layer" id="ui"></div>
 <script type="module">
 import {cameraAt,plane,BEATS,WIDTH,HEIGHT} from './timeline.mjs';
@@ -109,6 +109,58 @@ const at=(key,fallback)=>layout?.[key]??fallback;
 const DISTRICTS=Object.fromEntries(Object.entries({civic:[-2,14,1],hospital:[29,10,1],school:[29,6,24],water:[-2,5,24],industry:[-2,13,-23],energy:[29,12,-23],transit:[-30,6,1]})
  .map(([id,p])=>[id,layout?.[id]?[layout[id][0],layout[id][1]-1,layout[id][2]]:p]));
 const HUB=at('hub',[-60,10,1]);
+// The data core: a city whose layout has a projector on the control centre's
+// roof gets the hologram above it - a turning wireframe twin of the city,
+// rings of data round it, a column of light. It brightens as systems join.
+const CORE=layout?.core?{base:layout['hub-base'],r:layout['hub-radius']}:null;
+const TWIN=(()=>{                     // the twin's blocks, in units of the core's radius
+ const out=[],R=(()=>{let a=7;return()=>(a=(a*16807)%2147483647)/2147483647;})();
+ for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){
+  if(i*i+j*j>6)continue;
+  const h=.25+R()*(i===0&&j===0?1.3:.75);
+  out.push([i*.5,j*.5,.19+R()*.06,h*1.6]);
+ }
+ return out;
+})();
+function drawCore(t,on,dk){
+ if(!CORE||on<=0)return ['',''];
+ const [bx,by,bz]=CORE.base,r=CORE.r,cy=by+r*.25,spin=t*.35;
+ const P=(x,y,z)=>screen([bx+x,by+y,bz+z]);
+ const rot=(x,z)=>[x*Math.cos(spin)-z*Math.sin(spin),x*Math.sin(spin)+z*Math.cos(spin)];
+ const col='#C7FF3D',a=on*(.65+.35*dk);
+ let g='',glow='';
+ // Light column from the projector disc.
+ const ring=(y,rr,n=48)=>Array.from({length:n},(_,i)=>{const q=2*Math.PI*i/n;return P(Math.cos(q)*rr,y,Math.sin(q)*rr);});
+ const disc=ring(0,r*.95),top=ring(r*4.2,r*2.3);
+ const left=(pts)=>pts.reduce((m,p)=>p[0]<m[0]?p:m),right=(pts)=>pts.reduce((m,p)=>p[0]>m[0]?p:m);
+ const cone=[left(disc),left(top),right(top),right(disc)];
+ g+=`<polygon points="${cone.map(p=>p.join(',')).join(' ')}" fill="url(#beam)" opacity="${.55*a}"/>`;
+ // The twin: wireframe blocks on a turning base.
+ const edges=[];
+ for(const [x,z,s,h] of TWIN){
+  const c=[[-s,-s],[s,-s],[s,s],[-s,s]].map(([dx,dz])=>rot((x+dx)*r,(z+dz)*r));
+  const y0=r*.6,y1=y0+h*r;
+  for(let k=0;k<4;k++){const [x0,z0]=c[k],[x1,z1]=c[(k+1)%4];
+   edges.push([P(x0,y1,z0),P(x1,y1,z1)]);edges.push([P(x0,y0,z0),P(x0,y1,z0)]);}
+ }
+ const base=ring(r*.6,r*1.45,48).map(p=>p.join(',')).join(' ');
+ g+=`<polygon points="${base}" fill="${col}" fill-opacity="${.12*a}" stroke="${col}" stroke-opacity="${.7*a}" stroke-width="1.5"/>`;
+ const d=edges.map(([p,q])=>`M${p[0].toFixed(1)},${p[1].toFixed(1)}L${q[0].toFixed(1)},${q[1].toFixed(1)}`).join('');
+ g+=`<path d="${d}" stroke="${col}" stroke-opacity="${.85*a}" stroke-width="1.4" fill="none"/>`;
+ glow+=`<path d="${d}" stroke="${col}" stroke-opacity="${.5*a}" stroke-width="5" fill="none"/>`;
+ // Data rings: dashed ellipses whose dashes run round as the core turns.
+ for(const [y,rr,w,speed,c] of [[r*1.5,r*2.4,2.6,40,col],[r*2.7,r*2.0,1.8,-55,'#F05BB5'],[r*.45,r*2.9,1.6,25,col]]){
+  const pts=ring(y,rr,64).map(p=>p.join(',')).join(' ');
+  g+=`<polygon points="${pts}" fill="none" stroke="${c}" stroke-opacity="${.75*a}" stroke-width="${w}" stroke-dasharray="10 7" stroke-dashoffset="${(t*speed).toFixed(1)}"/>`;
+ }
+ // Sparks rising through the beam.
+ for(let i=0;i<16;i++){
+  const u=((t*.45+i*.137)%1),q=i*2.4+t*.6,rr=r*(.4+1.2*((i*.37)%1));
+  const [px,py]=P(Math.cos(q)*rr,u*r*4,Math.sin(q)*rr);
+  g+=`<circle cx="${px}" cy="${py}" r="2.2" fill="#F4FFD6" opacity="${a*(1-u)}"/>`;
+ }
+ return [g,glow];
+}
 // Routes: the page city's bend west to its island hub; a city whose layout
 // says `arcs` gets a plain arc from each landmark up and over into the hub.
 const arc=(a,b)=>{
@@ -226,7 +278,7 @@ window.renderFrame=function(t){
    if(pulse>0&&pulse<1)g+=`<circle cx="${ox}" cy="${oy}" r="${10+pulse*30}" fill="none" stroke="${col}" stroke-width="3" opacity="${(1-pulse)*routeFade}"/>`;
   });
   const [hx,hy]=screen(HUB),arrive=clamp(draw*1.2-.2);
-  g+=`<circle cx="${hx}" cy="${hy}" r="${16+6*Math.sin(t*5)}" fill="#C7FF3D" opacity="${.9*arrive*routeFade}"/>`;
+  if(!CORE)g+=`<circle cx="${hx}" cy="${hy}" r="${16+6*Math.sin(t*5)}" fill="#C7FF3D" opacity="${.9*arrive*routeFade}"/>`;
  }
 
  // Sensors: rings and readings over the districts during IoT.
@@ -256,6 +308,12 @@ window.renderFrame=function(t){
   html+=`<div class="chip ${level>1.4?'pink':''}" style="left:${gx+34}px;top:${gy-150}px;opacity:${ai}"><span>Water level · gauge W-03</span><strong>${level.toFixed(2)} m${t>BEATS.ai[0]+1.9?` → ${forecast.toFixed(2)} m`:''}</strong></div>`;
   const rc=out((t-BEATS.ai[0]-2.6)/.7);
   html+=`<div class="card" style="right:88px;top:${150+(1-rc)*24}px;opacity:${ai*rc}"><h4>AI recommendation</h4><p>Review the exposed access road and prepare the response team.</p><p style="font-size:15px;color:#8B7197;margin-top:10px">Illustrative forecast · a person decides</p></div>`;
+ }
+ {
+  // The core is there from the start, faint, and brightens as systems join.
+  const joined=clamp(span(t,[BEATS.data[0]+.3,BEATS.data[1]-.6]));
+  const on=(.35+.65*joined)*(1-smooth((t-BEATS.end[0])/.8)*.6);
+  const [cg,cglow]=drawCore(t,on,dk);g+=cg;glow+=cglow;
  }
  lines.innerHTML=g;halo.innerHTML=glow;
 

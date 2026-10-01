@@ -621,6 +621,14 @@ def tower(b, seed):
     return h
 
 
+def block(b, seed):
+    """The outskirts: one box per building, windows from the shader and
+    nothing else - enough to read as city past the modelled core."""
+    F = Frame(b['x'], b['z'], b['rot'])
+    h = b['floors'] * FLOOR
+    box('f-shop' if b['floors'] <= 5 else 'f-condo', F, 0, 0, 0, b['w'], h, b['d'], b['colour'], seed)
+
+
 def warehouse(b, seed):
     F = Frame(b['x'], b['z'], b['rot'])
     w, d, h = b['w'], b['d'], b['h']
@@ -720,27 +728,33 @@ def build_landmarks(plan, M):
     lm = plan['landmarks']
     lamp_glow = '#FFD29A'
 
-    # Control centre: a dark glass operations hall on a plaza, the curved
-    # video wall in front of it.
+    # Control centre: a dark glass block with lit edges and, on its roof, the
+    # projector for the city's digital twin. The hologram itself moves, so the
+    # film draws it (film.html, drawCore) from the anchors set here.
     l = lm['hub']
-    F = plaza(l)
-    box('f-glass', F, 0, 0.16, -l['d'] * 0.2, l['w'] * 0.7, 3.4, l['d'] * 0.45, '#2C2A38', 0.31)
-    box('neon', F, 0, 3.4, -l['d'] * 0.2, l['w'] * 0.7 + 0.1, 0.12, l['d'] * 0.45 + 0.1, '#C7FF3D', top=False)
-    half, bottom, top = l['w'] * 0.42, 5.6, 12.6
-    uv = []
-    lay = L('screen')
-    n = 16
-    for i in range(n):
-        xa, xb = -half + 2 * half * i / n, -half + 2 * half * (i + 1) / n
-        za, zb = l['d'] * 0.1 + 1.4 * (xa / half) ** 2, l['d'] * 0.1 + 1.4 * (xb / half) ** 2
-        lay.face([F(xa, bottom, za), F(xb, bottom, zb), F(xb, top, zb), F(xa, top, za)], '#000000')
-        uv += [(i / n, 0), ((i + 1) / n, 0), ((i + 1) / n, 1), (i / n, 1)]
-        box('paint', F, (xa + xb) / 2, bottom - 0.2, (za + zb) / 2 - 0.25, (xb - xa) + 0.05, top - bottom + 0.4, 0.3, '#23212E')
-    for px in (-half * 0.7, -half * 0.25, half * 0.25, half * 0.7):
-        cyl('paint', F, px, 0.16, l['d'] * 0.1 - 0.3 + 1.4 * (px / half) ** 2, 0.22, bottom - 0.16, '#23212E', n=10)
-    hx, hy, hz = F(0, (bottom + top) / 2, l['d'] * 0.1 + 0.4)
-    ANCHORS['hub'] = [hx, hy, hz]
-    SCREEN_UV.update({'screen': uv})
+    F = plaza(l, '#E6E2EC')
+    w, d, h = l['w'] * 0.62, l['d'] * 0.62, 9.0
+    box('f-podium', F, 0, 0.16, 0, w + 1.6, 2.5, d + 1.6, '#2C2A38', 0.31)
+    box('f-glass', F, 0, 2.66, 0, w, h - 2.5, d, '#2C2A38', 0.32)
+    for yy in (2.62, h + 0.12):
+        box('neon', F, 0, yy, 0, (w + 1.62) if yy < 3 else w + 0.06, 0.1, (d + 1.62) if yy < 3 else d + 0.06, '#C7FF3D', top=False)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            box('neon', F, sx * w / 2, 2.66, sz * d / 2, 0.08, h - 2.5, 0.08, '#C7FF3D')
+    roof = h + 0.16
+    r = min(w, d) * 0.36
+    cyl('paint', F, 0, roof, 0, r + 0.5, 0.35, '#23212E', n=40)
+    cyl('neon', F, 0, roof + 0.35, 0, r + 0.15, 0.08, '#C7FF3D', n=40)
+    cyl('glow', F, 0, roof + 0.36, 0, r - 0.4, 0.05, '#9BE05A', n=40)
+    for k in range(4):
+        a = k * math.pi / 2 + math.pi / 4
+        seg('metal', F(math.cos(a) * (r + 0.4), roof + 0.4, math.sin(a) * (r + 0.4)),
+            F(math.cos(a) * (r + 0.2), roof + 1.6, math.sin(a) * (r + 0.2)), 0.07, '#C9CBD3', n=5)
+    bx, by, bz = F(0, roof + 0.45, 0)
+    ANCHORS['hub-base'] = [bx, by, bz]
+    ANCHORS['hub-radius'] = r
+    ANCHORS['hub'] = [bx, by + r * 1.9, bz]
+    ANCHORS['core'] = True
 
     # City hall: a modern civic block crowned with a Thai roof, a flag line.
     l = lm['civic']
@@ -1204,6 +1218,8 @@ def build(plan):
             tower(b, seed)
         elif k == 'warehouse':
             warehouse(b, seed)
+        elif k == 'block':
+            block(b, seed)
     for x, z, s, kind in plan['trees']:
         tree(x, z, s, kind)
     for x, z in plan['lamps']:
@@ -1301,14 +1317,12 @@ def main():
         layout = dict(ANCHORS)
         layout['lanes'] = plan['lanes']
         layout['arcs'] = True
-        layout['fade'] = plan['fade']
         with open(layout_path, 'w') as f:
             json.dump(layout, f)
     look = {**look, 'shadow': False}
     stage(scene, m, look)
     scene.cycles.transparent_max_bounces = 16
     shoot(scene, m, out, samples)
-    fade_edges(out, m, plan['fade']['rs'], plan['fade']['rd'])
 
 
 def fade_edges(path, m, rs, rd):

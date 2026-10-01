@@ -62,7 +62,10 @@ def catmull(points, n=10):
     return out
 
 
-DOMAIN = Polygon([xz(RS * 1.12 * math.cos(a), RD * 1.12 * math.sin(a)) for a in [2 * math.pi * i / 96 for i in range(96)]])
+# The land runs past every frame the film's camera takes, so the city never
+# ends on screen: inside the ellipse it is modelled in full; beyond it, the
+# outskirts, it is simple massing - the same streets and river, plain blocks.
+DOMAIN = Polygon([xz(-145, -180), xz(215, -180), xz(215, 155), xz(-145, 155)])
 
 # ---- the river ---------------------------------------------------------------------
 RIVER_W = 15.0
@@ -138,11 +141,14 @@ def jog(points_axis, axis, at, jogs):
 # others, around superblocks of fifty to seventy units - the sois fill them.
 # Three cross the river on bridges.
 ART = 6.0
-for z0, jogs, span, bridge in [(-122, [(-40, 6)], (-200, 160), False), (-64, [(30, -5)], (-200, 200), True),
-                               (-8, [(70, 6)], (-200, 200), False), (50, [(0, 7)], (-140, 200), True), (108, [], (-60, 200), False)]:
+for z0, jogs, span, bridge in [(-122, [(-40, 6)], (-320, 320), False), (-64, [(30, -5)], (-320, 320), True),
+                               (-8, [(70, 6)], (-320, 320), False), (50, [(0, 7)], (-320, 320), True), (108, [], (-320, 320), False),
+                               (-238, [(60, 6)], (-320, 320), False), (-180, [(-20, -5)], (-320, 320), False),
+                               (166, [(40, 6)], (-320, 320), False), (224, [], (-320, 320), False)]:
     add_road(jog(span, 'x', z0, jogs), ART, 'arterial', bridge=bridge)
-for x0, jogs, span, bridge in [(-104, [(-30, 5)], (-200, 140), False), (-44, [(20, -6)], (-200, 200), False),
-                               (16, [(-50, 5)], (-200, 200), True), (76, [(-40, 6)], (-200, 170), False), (132, [], (-160, 110), False)]:
+for x0, jogs, span, bridge in [(-104, [(-30, 5)], (-320, 320), False), (-44, [(20, -6)], (-320, 320), False),
+                               (16, [(-50, 5)], (-320, 320), True), (76, [(-40, 6)], (-320, 320), False), (132, [], (-320, 320), False),
+                               (-164, [(-60, 6)], (-320, 320), False), (190, [(20, -6)], (-320, 320), False), (248, [], (-320, 320), False)]:
     add_road(jog(span, 'z', x0, jogs), ART, 'arterial', bridge=bridge)
 # Secondary roads split a few superblocks.
 SEC = 4.2
@@ -293,7 +299,7 @@ for r in list(roads):
         n = math.hypot(dx, dz) or 1
         nx, nz = -dz / n, dx / n
         for side in (-1, 1):
-            if rng.random() < 0.6:
+            if fade(p.x, p.y) < 1.0 and rng.random() < 0.6:
                 length = rng.uniform(14, 34)
                 start = (p.x + side * nx * (r['w'] / 2), p.y + side * nz * (r['w'] / 2))
                 end = (start[0] + side * nx * length, start[1] + side * nz * length)
@@ -321,7 +327,7 @@ TOWER_COLOURS = ['#EEF0F5', '#E4DDEF', '#F2EEE8', '#DCE3EC', '#E9E4F2']
 
 
 def zone(x, z):
-    if fade(x, z) > 0.9:
+    if fade(x, z) > 1.0:
         return 'edge'
     if near(x, z, 'port', 42) > 0:
         return 'port'
@@ -355,6 +361,8 @@ def frontage(road):
                     w, dep, kind = rng.uniform(10, 15), rng.uniform(9, 13), 'tower'
                 elif zn == 'cbd' and soi and rng.random() < 0.5:
                     w, dep, kind = rng.uniform(8, 11), rng.uniform(7, 10), 'midrise'
+                elif zn == 'edge':
+                    w, dep, kind = rng.uniform(8, 16), rng.uniform(7, 10), 'block'
                 elif zn == 'port':
                     w, dep, kind = rng.uniform(12, 18), rng.uniform(8, 11), 'warehouse'
                 elif soi:
@@ -414,6 +422,10 @@ def make(kind, cx, cz, w, dep, ang, zn, front=None):
         b['h'] = round(rng.uniform(3.5, 5.5), 2)
         b['colour'] = rng.choice(['#D9DCE4', '#E6E3EC', '#CFD6DE', '#DED6CC'])
         b['solar'] = rng.random() < 0.35
+    elif kind == 'block':
+        r = rng.random()
+        b['floors'] = rng.randint(2, 5) if r < 0.8 else rng.randint(8, 14) if r < 0.95 else rng.randint(18, 30)
+        b['colour'] = rng.choice(SHOP_COLOURS + TOWER_COLOURS)
     elif kind == 'house':
         b['floors'] = rng.choice([1, 2, 2])
         b['colour'] = rng.choice(SHOP_COLOURS)
@@ -442,7 +454,7 @@ for block in blocks:
         elif zn == 'oldtown':
             kind, w, dep = rng.choice(['shophouse', 'house']), rng.uniform(4, 9), rng.uniform(5, 7)
         elif zn == 'edge':
-            kind, w, dep = 'house', rng.uniform(4, 6.5), rng.uniform(4, 6)
+            kind, w, dep = 'block', rng.uniform(6, 13), rng.uniform(6, 11)
         else:
             kind = rng.choice(['house', 'house', 'midrise', 'midrise', 'townhouse'])
             w, dep = (rng.uniform(8, 13), rng.uniform(8, 11)) if kind == 'midrise' else (rng.uniform(4.5, 8), rng.uniform(4.5, 6.5))
@@ -459,7 +471,7 @@ for block in blocks:
     for _ in range(int(block.area / 3)):
         x, z = rng.uniform(x0, x1), rng.uniform(z0, z1)
         zn = zone(x, z)
-        if zn in ('cbd', 'port') or not block.contains(Point(x, z)):
+        if zn in ('cbd', 'port', 'edge') or not block.contains(Point(x, z)):
             continue
         w, dep = rng.uniform(3.5, 5.5), rng.uniform(3.5, 5)
         poly = rect(x, z, w, dep, 0)
@@ -477,6 +489,8 @@ for block in blocks:
         if not block.contains(Point(x, z)):
             continue
         if zone(x, z) in ('cbd', 'port') and rng.random() < 0.7:
+            continue
+        if zone(x, z) == 'edge' and rng.random() < 0.75:
             continue
         poly = Point(x, z).buffer(0.9)
         if free(poly, 0.1):
