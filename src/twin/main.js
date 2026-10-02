@@ -11,11 +11,7 @@ import {CHAPTERS} from './story.js';
 import {dataLayer} from './data-layer.js';
 
 const C = window.Cesium;
-// The demo scene is reached through /supermap on this site, which vercel.json
-// (and vite.config.js, locally) passes on to iserver.supermap.io/iserver. With
-// no "/iserver" in the URL the SDK skips its license and login round trips -
-// seconds on the demo server - and the responses can be cached on the way.
-const DEMO = `${location.origin}/supermap/services/3D-CBD/rest/realspace`;
+const DEMO = 'https://iserver.supermap.io/iserver/services/3D-CBD/rest/realspace';
 // The demo's layers, so the page need not ask for the listing first.
 const DEMO_LAYERS = ['Ground_1@CBD', 'Ground_2@CBD', 'Lake@CBD', 'Building@CBD', 'Tree@CBD'];
 const SCENE = (new URLSearchParams(location.search).get('scene') || DEMO).replace(/\/+$/, '');
@@ -65,12 +61,11 @@ async function loadCity() {
   const count = (state, tail = '') => setSource(`SuperMap iServer · ${service} · ${loaded} / ${names.length} layers${tail}`, state);
   const add = list => Promise.all(list.map(name =>
     scene.addS3MTilesLayerByScp(sdkUrl(`${SCENE}/datas/${encodeURIComponent(name)}/config`), {name}).then(
-      layer => { loaded++; count(); return layer; },
+      layer => { loaded++; count(); (window.twin.layers ||= []).includes(layer) || window.twin.layers.push(layer); show(); return layer; },
       error => { console.warn(`SuperMap layer ${name} did not load`, error); return null; })));
   count();
   const first = (await add(names.filter(n => !later(n)))).filter(Boolean);
   if (!first.length) throw new Error('no layer loaded');
-  window.twin.layers = first;
   count('live', ' · loading tiles…');
   // A layer raises allTilesLoaded once its tiles for the view have settled.
   const settled = layer => new Promise(done => {
@@ -78,7 +73,7 @@ async function loadCity() {
   });
   Promise.race([Promise.all(first.map(settled)), new Promise(done => setTimeout(done, 10000))])
     .then(() => add(names.filter(later)))
-    .then(rest => { window.twin.layers.push(...rest.filter(Boolean)); count('live'); });
+    .then(() => count('live'));
   return names;
 }
 
@@ -153,12 +148,27 @@ if (story) {
   $('note').textContent = 'Your SuperMap iServer scene · drag to look around';
 }
 
-loadCity().then(names => {
-  // Adding the layers moves the camera; put it back where the story stands.
+// The loading screen never outstays the city: it lifts as soon as the first
+// layer is in, or after 20 s whatever the server is doing, and an error shows
+// if no layer has arrived in a minute.
+let shown = false;
+function show() {
+  if (shown) return;
+  shown = true;
   if (story) fly(CHAPTERS[chapter].view, 0);
-  else frameScene(names[0]);
   $('loading').classList.add('done');
+}
+const lift = setTimeout(show, 20000);
+const giveUp = setTimeout(() => { if (!window.twin.layers?.length) fail('SuperMap iServer is taking too long to answer.'); }, 60000);
+loadCity().then(names => {
+  clearTimeout(lift);
+  clearTimeout(giveUp);
+  // Adding the layers moves the camera; put it back where the story stands.
+  if (!story) frameScene(names[0]);
+  show();
 }, error => {
+  clearTimeout(lift);
+  clearTimeout(giveUp);
   console.error(error);
   fail('The 3D city could not be loaded from SuperMap iServer.');
 });
